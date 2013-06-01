@@ -1,0 +1,24 @@
+DROP TABLE IF EXISTS zones;
+DROP TABLE IF EXISTS rrsets;
+DROP TABLE IF EXISTS rrs;
+CREATE TABLE zones (
+  id    INTEGER NOT NULL PRIMARY KEY, 
+  name blob NOT NULL UNIQUE);
+CREATE TABLE rrsets (
+  id       INTEGER NOT NULL PRIMARY KEY, 
+  zone_id integer(10) NOT NULL, 
+  label   text NOT NULL, 
+  class   integer(10) NOT NULL, 
+  type    integer(10) NOT NULL, 
+  ndndata blob, 
+  FOREIGN KEY(zone_id) REFERENCES zones(id) ON UPDATE Cascade ON DELETE Cascade);
+CREATE TABLE rrs (
+  id        INTEGER NOT NULL PRIMARY KEY, 
+  rrset_id integer(10) NOT NULL, 
+  ttl      integer(10) NOT NULL, 
+  rrdata   blob NOT NULL, 
+  FOREIGN KEY(rrset_id) REFERENCES rrsets(id) ON UPDATE Cascade ON DELETE Cascade);
+CREATE UNIQUE INDEX rrsets_zone_id_label_class_type 
+  ON rrsets (zone_id, label, class, type);
+CREATE INDEX rrs_rrset_id 
+  ON rrs (rrset_id);

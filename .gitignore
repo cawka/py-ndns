@@ -1,0 +1,9 @@
+*.pyo
+*.pyc
+var/*.db
+lib/pyccn
+lib/dns
+.svn
+*.bak
+*.bak~*
+*~*
