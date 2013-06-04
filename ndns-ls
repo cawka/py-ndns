@@ -25,7 +25,13 @@ import pyccn
 ######################################################################
 
 parser = argparse.ArgumentParser(description='List records in NDNS zone')
+parser.add_argument('zone', metavar='zone', type=str,
+                    help='''NDN name of the zone to create''')
 args = parser.parse_args()
+
+if (not args.zone):
+    parser.print_help ()
+    exit (1)
 
 ######################################################################
 ######################################################################
@@ -34,6 +40,20 @@ args = parser.parse_args()
 if( __name__ == '__main__' ):
     _ndns = ndns.ndns ()
 
-    sys.stdout.write ("# List of configured NDNS zones:\n")
-    for zone in _ndns.listZones ():
-        sys.stdout.write ("%s\n" % zone)
+    try:
+        zone_ndn = pyccn.Name (args.zone)
+        zone_dns = ndns.dnsify (args.zone)
+    except NameError as e:
+        sys.stderr.write ("ERROR: %s\n\n" % e)
+        parser.print_help ()
+        exit (1)
+
+    zone_id = _ndns.doesZoneExists (zone_ndn)
+    if not zone_id:
+        sys.stderr.write ("ERROR: zone [%s] is not configured\n" % zone_ndn)
+        exit (1)
+
+    sys.stdout.write ("# Origin: %s (%s)\n" % (zone_dns, zone_ndn))
+    for row in _ndns.listRrSets (zone_id):
+        for rrset in row['rrset'].answer:
+            print (rrset.to_text ())
