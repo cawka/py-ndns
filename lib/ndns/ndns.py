@@ -31,27 +31,35 @@ class ndns:
 
         try:
             self._db.executescript ('''
-    CREATE TABLE zones (
-      id    INTEGER NOT NULL PRIMARY KEY, 
-      name blob NOT NULL UNIQUE);
-    CREATE TABLE rrsets (
-      id       INTEGER NOT NULL PRIMARY KEY, 
-      zone_id integer(10) NOT NULL, 
-      label   text NOT NULL, 
-      class   integer(10) NOT NULL, 
-      type    integer(10) NOT NULL, 
-      ndndata blob, 
-      FOREIGN KEY(zone_id) REFERENCES zones(id) ON UPDATE Cascade ON DELETE Cascade);
-    CREATE TABLE rrs (
-      id        INTEGER NOT NULL PRIMARY KEY, 
-      rrset_id integer(10) NOT NULL, 
-      ttl      integer(10) NOT NULL, 
-      rrdata   blob NOT NULL, 
-      FOREIGN KEY(rrset_id) REFERENCES rrsets(id) ON UPDATE Cascade ON DELETE Cascade);
-    CREATE UNIQUE INDEX rrsets_zone_id_label_class_type 
-      ON rrsets (zone_id, label, class, type);
-    CREATE INDEX rrs_rrset_id 
-      ON rrs (rrset_id);
+CREATE TABLE zones (
+  id    INTEGER NOT NULL PRIMARY KEY, 
+  name blob NOT NULL UNIQUE);
+CREATE TABLE rrsets (
+  id       INTEGER NOT NULL PRIMARY KEY, 
+  zone_id integer(10) NOT NULL, 
+  label   text NOT NULL, 
+  class   integer(10) NOT NULL, 
+  type    integer(10) NOT NULL, 
+  ndndata blob, 
+  FOREIGN KEY(zone_id) REFERENCES zones(id) ON UPDATE Cascade ON DELETE Cascade);
+CREATE TABLE rrs (
+  id        INTEGER NOT NULL PRIMARY KEY, 
+  rrset_id integer(10) NOT NULL, 
+  ttl      integer(10) NOT NULL, 
+  rrdata   blob NOT NULL, 
+  FOREIGN KEY(rrset_id) REFERENCES rrsets(id) ON UPDATE Cascade ON DELETE Cascade);
+CREATE UNIQUE INDEX rrsets_zone_id_label_class_type 
+  ON rrsets (zone_id, label, class, type);
+CREATE INDEX rrs_rrset_id 
+  ON rrs (rrset_id);
+CREATE INDEX rrs_rrset_id_rrdata 
+  ON rrs (rrset_id, rrdata);
+CREATE TRIGGER rrs_update
+BEFORE INSERT ON rrs
+FOR EACH ROW
+BEGIN
+    DELETE FROM rrs WHERE rrset_id = NEW.rrset_id AND rrdata = NEW.rrdata;
+END;
     ''');
             self._db.commit ()
         except:
@@ -63,7 +71,6 @@ class ndns:
     def __del__ (self):
         self._db.commit ()
         self._db.close ()
-
 
     def doesZoneExists (self, zone_name):
         c = self._db.cursor ()
@@ -91,23 +98,37 @@ class ndns:
             co = pyccn.ContentObject.from_ccnb (rrset[4])
             # print co.content
             msg = dns.message.from_wire (co.content)
-            yield {"id": rrset[0], "rrset":msg, "data":co, "label":rrset[1]}
+            yield {"id": rrset[0], "rrset":msg.answer[0], "data":co, "label":rrset[1]}
         
+    def findRrSet (self, zone_id, label, rtype, rclass = dns.rdataclass.IN):
+        c = self._db.cursor ()
+        c.execute ("SELECT id, label, class, type, ndndata FROM rrsets WHERE zone_id = ? AND label = ? AND class = ? AND type = ?",
+                   [zone_id, label, rclass, rtype])
+        row = c.fetchone ()
+        if not row:
+            return None
+        
+        co = pyccn.ContentObject.from_ccnb (row[4])
+        msg = dns.message.from_wire (co.content)
+        return {"id":row[0], "rrset":msg.answer[0], "data":co}
+
     def addRR (self, zone_id, label, ttl, rdata):
         c = self._db.cursor ()
+        label = dns.name.from_text (label)
 
-        try:
+        # try:
+        if 1==1:
             # find or create RRset
-            c.execute ('''SELECT zones.id,name FROM rrsets JOIN zones on zones.id = rrsets.zone_id 
+            c.execute ('''SELECT rrsets.id,name FROM rrsets JOIN zones on zones.id = rrsets.zone_id 
                              WHERE zone_id = ? AND label = ? AND class = ? AND type = ?''',
-                       [zone_id, label, rdata.rdclass, rdata.rdtype])
+                       [zone_id, label.to_text (), rdata.rdclass, rdata.rdtype])
             row = c.fetchone ()
             if row:
                 rrset_id = row[0]
                 zone_name = pyccn.Name (ccnb_buffer = row[1])
             else:
                 c.execute ("INSERT INTO rrsets (zone_id, label, class, type) VALUES (?, ?, ?, ?)",
-                           [zone_id, label, rdata.rdclass, rdata.rdtype])
+                           [zone_id, label.to_text (), rdata.rdclass, rdata.rdtype])
                 rrset_id = c.lastrowid
     
                 c.execute ('''SELECT name FROM zones WHERE id = ?''', [zone_id])
@@ -125,15 +146,13 @@ class ndns:
             key = pyccn.Key.getDefaultKey ()
             keyLocator = pyccn.KeyLocator.getDefaultKeyLocator ()
     
-            rrset = dns.rrset.RRset (dns.name.from_text (label), rdata.rdclass, rdata.rdtype)
+            rrset = dns.rrset.RRset (label, rdata.rdclass, rdata.rdtype)
             for row in c.execute ("SELECT ttl,rrdata FROM rrs WHERE rrset_id = ? ORDER BY rrdata", [rrset_id]):
                 rrset.add (ttl = row[0], rd = dns.rdata.from_wire (rdata.rdclass, rdata.rdtype, row[1], 0, len (row[1])))
     
-            # print rrset.to_text (relativize=False)
-    
             rrset_name = pyccn.Name (zone_name)
             if (len (label) > 0):
-                rrset_name = rrset_name.append (label) 
+                rrset_name = rrset_name.append (label.to_text ()) 
             rrset_name = rrset_name.append ("dns")
             rrset_name = rrset_name.append (dns.rdatatype.to_text (rdata.rdtype))
             
@@ -151,6 +170,6 @@ class ndns:
 
             self._db.commit ()
 
-        except Exception, e:
-            self._db.rollback ()
-            raise e
+        # except Exception, e:
+        #     self._db.rollback ()
+        #     raise e

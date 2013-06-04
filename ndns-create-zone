@@ -74,4 +74,4 @@ if( __name__ == '__main__' ):
     soa = dns.rdata.from_text (dns.rdataclass.IN, dns.rdatatype.SOA,
                                "%s %s ( %d %d %d %d %d )" % (mname, rname, serial, refresh, retry, expire, minimum))
 
-    _ndns.addRR (zone_id, "", args.ttl, soa)
+    _ndns.addRR (zone_id, "@", args.ttl, soa)

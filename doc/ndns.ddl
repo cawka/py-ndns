@@ -1,3 +1,4 @@
+DROP TRIGGER IF EXISTS rrs_update;
 DROP TABLE IF EXISTS zones;
 DROP TABLE IF EXISTS rrsets;
 DROP TABLE IF EXISTS rrs;
@@ -22,3 +23,12 @@ CREATE UNIQUE INDEX rrsets_zone_id_label_class_type
   ON rrsets (zone_id, label, class, type);
 CREATE INDEX rrs_rrset_id 
   ON rrs (rrset_id);
+CREATE INDEX rrs_rrset_id_rrdata 
+  ON rrs (rrset_id, rrdata);
+CREATE TRIGGER rrs_update
+BEFORE INSERT ON rrs
+FOR EACH ROW
+BEGIN
+    DELETE FROM rrs WHERE rrset_id = NEW.rrset_id AND rrdata = NEW.rrdata;
+END;
+

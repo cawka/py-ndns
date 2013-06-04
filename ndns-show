@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+# -*- Mode:python; c-file-style:"gnu"; indent-tabs-mode:nil -*- */
+# 
+# Copyright (c) 2013, Regents of the University of California
+#                     Alexander Afanasyev
+# 
+# BSD license, See the doc/LICENSE file for more information
+# 
+# Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
+# 
+
+# make sure modules from lib/ are loaded
+import sys; sys.path = ["%s/lib" % sys.path[0]] + sys.path
+
+import sqlite3, iscpy, argparse, time
+import dns.rdataclass
+import dns.rdatatype
+import dns.rdata
+import dns.rrset
+import ndns
+import pyccn
+
+######################################################################
+######################################################################
+######################################################################
+
+parser = argparse.ArgumentParser(description='Show RR set to NDNS zone')
+parser.add_argument('zone', metavar='zone', type=str,
+                    help='''NDN name of the zone''')
+parser.add_argument('label', metavar='label', type=str,
+                    help='''RR set label''')
+parser.add_argument('type', metavar='type', type=str,
+                    help='''RR set type''')
+# parser.add_argument('class', metavar='rclass', type=str, default='IN',
+#                     help='''RR set class (default: IN)''')
+args = parser.parse_args()
+
+if (not args.zone or not args.type):
+    parser.print_help ()
+    exit (1)
+
+######################################################################
+######################################################################
+######################################################################
+
+if( __name__ == '__main__' ):
+    _ndns = ndns.ndns ()
+
+    try:
+        zone_ndn = pyccn.Name (args.zone)
+        zone_dns = ndns.dnsify (args.zone)
+    except NameError as e:
+        sys.stderr.write ("ERROR: %s\n\n" % e)
+        parser.print_help ()
+        exit (1)
+
+    zone_id = _ndns.doesZoneExists (zone_ndn)
+    if not zone_id:
+        sys.stderr.write ("ERROR: zone [%s] is not configured\n" % zone_ndn)
+        exit (1)
+
+    rrset = _ndns.findRrSet (zone_id, args.label, 
+                             dns.rdatatype.from_text (args.type), dns.rdataclass.IN)
+    sys.stdout.write (";; Origin: %s (%s)\n" % (zone_dns, zone_ndn))
+    if rrset:
+        print rrset['rrset']
+    else:
+        sys.stdout.write (";; Requested RR set is not found\n");
