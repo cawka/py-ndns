@@ -42,7 +42,7 @@ if( __name__ == '__main__' ):
 
     try:
         zone_ndn = pyccn.Name (args.zone)
-        zone_dns = ndns.dnsify (args.zone)
+        zone_dns = dns.name.from_text (ndns.dnsify (args.zone))
     except NameError as e:
         sys.stderr.write ("ERROR: %s\n\n" % e)
         parser.print_help ()
@@ -57,5 +57,8 @@ if( __name__ == '__main__' ):
     for row in _ndns.listRrSets (zone_id):
         rrset = row['rrset']
         for rdata in rrset.items:
-            print ("%s %d %s %s   %s" % (rrset.name, rrset.ttl, dns.rdataclass.to_text (rdata.rdclass), 
-                                       dns.rdatatype.to_text (rdata.rdtype), rdata.to_text ()))
+            print ("%s %d %s %s   %s" % (rrset.name.relativize (zone_dns), 
+                                         rrset.ttl,
+                                         dns.rdataclass.to_text (rdata.rdclass), 
+                                         dns.rdatatype.to_text (rdata.rdtype), 
+                                         rdata.to_text ()))

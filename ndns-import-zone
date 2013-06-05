@@ -1,0 +1,76 @@
+#!/usr/bin/env python
+# -*- Mode:python; c-file-style:"gnu"; indent-tabs-mode:nil -*- */
+# 
+# Copyright (c) 2013, Regents of the University of California
+#                     Alexander Afanasyev
+# 
+# BSD license, See the doc/LICENSE file for more information
+# 
+# Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
+# 
+
+# make sure modules from lib/ are loaded
+import sys; sys.path = ["%s/lib" % sys.path[0]] + sys.path
+
+import sqlite3, iscpy, argparse, time
+import dns.rdataclass
+import dns.rdatatype
+import dns.rdata
+import dns.rrset
+import dns.zone
+import ndns
+import pyccn
+
+######################################################################
+######################################################################
+######################################################################
+
+parser = argparse.ArgumentParser(description='Create NDNS zone from a zone file')
+parser.add_argument('zone', metavar='zone', type=str,
+                    help='''NDN name of the zone''')
+parser.add_argument('file', metavar='file', type=str, nargs='?', default='-',
+                    help='''Zone file (must contain a valid SOA record). 
+                            If file is omitted or is -, then zone is read from the standard input is used''')
+args = parser.parse_args()
+
+if (not args.zone):
+    parser.print_help ()
+    exit (1)
+
+######################################################################
+######################################################################
+######################################################################
+
+if( __name__ == '__main__' ):
+    _ndns = ndns.ndns ()
+
+    try:
+        zone_ndn = pyccn.Name (args.zone)
+        zone_dns = ndns.dnsify (args.zone)
+    except NameError as e:
+        sys.stderr.write ("ERROR: %s\n\n" % e)
+        parser.print_help ()
+        exit (1)
+
+    zone_id = _ndns.doesZoneExists (zone_ndn)
+    if zone_id:
+        sys.stderr.write ("ERROR: zone [%s] already configured\n" % zone_ndn)
+        sys.stderr.write ("       If you want to recrecrete the zone, delete it first using `ndn-destroy-zone` command\n")
+        exit (1)
+
+    try:
+        if args.file == '-':
+            fin = sys.stdin
+        else:
+            fin = open (args.file, 'rt')
+        
+        zone = dns.zone.from_file (fin, origin = dns.name.from_text (zone_dns), check_origin = True)
+        
+        zone_id = _ndns.createZone (zone_ndn)
+
+        for (name, ttl, rdata) in zone.iterate_rdatas ():
+            print "Import record: '%s %d %s'" % (name, ttl, rdata.to_text ())
+            _ndns.addRR (zone_id, name, ttl, rdata)
+        
+    except dns.zone.NoSOA:
+        sys.stderr.write ("ERROR: zone file [%s] does not contain a valid SOA record\n" % args.file)

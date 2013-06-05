@@ -16,6 +16,12 @@ import dns.rrset
 import dns.message
 from pyccn import _pyccn
 import time
+import sys
+from dnsifier import *
+
+class Error (Exception):
+    """NDNS exception"""
+    pass
 
 class ndns:
     __slots__ = ["_config", "_db"]
@@ -99,11 +105,37 @@ END;
             # print co.content
             msg = dns.message.from_wire (co.content)
             yield {"id": rrset[0], "rrset":msg.answer[0], "data":co, "label":rrset[1]}
-        
-    def findRrSet (self, zone_id, label, rtype, rclass = dns.rdataclass.IN):
+
+    def countRrSets (self, zone_id, label):
         c = self._db.cursor ()
+        if not isinstance(label, dns.name.Name):
+            label = dns.name.from_text (label).relativize (dns.name.root)
+
+        c.execute ("SELECT count(*) FROM rrsets WHERE zone_id = ? AND label = ?",
+                   [zone_id, label.to_text ()])
+        return c.fetchone ()[0]
+
+    def findRrSets (self, zone_id, label):
+        c = self._db.cursor ()
+        if not isinstance(label, dns.name.Name):
+            label = dns.name.from_text (label).relativize (dns.name.root)
+
+        for rrset in c.execute ("SELECT id, label, class, type, ndndata FROM rrsets WHERE zone_id = ? AND label = ?",
+                                [zone_id, label.to_text ()]):
+            co = pyccn.ContentObject.from_ccnb (rrset[4])
+            msg = dns.message.from_wire (co.content)
+            yield {"id":rrset[0], "rrset":msg.answer[0], "data":co}
+        
+    def findRrSet (self, zone_id, label, rtype):
+        c = self._db.cursor ()
+        if not isinstance(label, dns.name.Name):
+            label = dns.name.from_text (label).relativize (dns.name.root)
+
+        if isinstance(rtype, basestring):
+            rtype = dns.rdatatype.from_text (rtype)
+
         c.execute ("SELECT id, label, class, type, ndndata FROM rrsets WHERE zone_id = ? AND label = ? AND class = ? AND type = ?",
-                   [zone_id, label, rclass, rtype])
+                   [zone_id, label.to_text (), dns.rdataclass.IN, rtype])
         row = c.fetchone ()
         if not row:
             return None
@@ -112,64 +144,151 @@ END;
         msg = dns.message.from_wire (co.content)
         return {"id":row[0], "rrset":msg.answer[0], "data":co}
 
+    def findRdata (self, zone_id, label, rdata):
+        if not isinstance(label, dns.name.Name):
+            label = dns.name.from_text (label).relativize (dns.name.root)
+        
+        c = self._db.cursor ()
+        c.execute ('''
+SELECT 
+    rrset.id, label, class, type, rrs.id 
+    FROM (SELECT * 
+            FROM rrsets 
+            WHERE zone_id = ? AND label = ? AND class = ? AND type = ?) rrset
+        JOIN rrs ON rrset.id = rrs.rrset_id
+    WHERE rrdata = ?''',
+                   [zone_id, label.to_text (), dns.rdataclass.IN, rdata.rdtype, buffer (rdata.to_digestable ())])
+
+        row = c.fetchone ()
+        if not row:
+            return None
+
+        return {"rrset_id":row[0], "rr_id":row[4], "rrdata":rdata}
+
     def addRR (self, zone_id, label, ttl, rdata):
         c = self._db.cursor ()
-        label = dns.name.from_text (label)
+        if not isinstance(label, dns.name.Name):
+            label = dns.name.from_text (label).relativize (dns.name.root)
 
-        # try:
-        if 1==1:
+        try:
             # find or create RRset
-            c.execute ('''SELECT rrsets.id,name FROM rrsets JOIN zones on zones.id = rrsets.zone_id 
-                             WHERE zone_id = ? AND label = ? AND class = ? AND type = ?''',
+            c.execute ('''SELECT id FROM rrsets WHERE zone_id = ? AND label = ? AND class = ? AND type = ?''',
                        [zone_id, label.to_text (), rdata.rdclass, rdata.rdtype])
             row = c.fetchone ()
             if row:
                 rrset_id = row[0]
-                zone_name = pyccn.Name (ccnb_buffer = row[1])
             else:
                 c.execute ("INSERT INTO rrsets (zone_id, label, class, type) VALUES (?, ?, ?, ?)",
                            [zone_id, label.to_text (), rdata.rdclass, rdata.rdtype])
                 rrset_id = c.lastrowid
-    
-                c.execute ('''SELECT name FROM zones WHERE id = ?''', [zone_id])
-                zone_name = pyccn.Name (ccnb_buffer = c.fetchone ()[0])
-    
+
             ##
-    
-            rdata_wire = cStringIO.StringIO ()
-            rdata.to_wire (rdata_wire)
-    
+
+            if (dns.rdatatype.is_singleton (rdata.rdtype)):
+                c.execute ("DELETE FROM rrs WHERE rrset_id = ?", [rrset_id])
+
             c.execute ("INSERT INTO rrs (rrset_id, ttl, rrdata) VALUES (?, ?, ?)",
-                       [rrset_id, ttl, buffer (rdata_wire.getvalue ())])
-            rr_id = c.lastrowid
+                       [rrset_id, ttl, buffer (rdata.to_digestable ())])
             
-            key = pyccn.Key.getDefaultKey ()
-            keyLocator = pyccn.KeyLocator.getDefaultKeyLocator ()
-    
-            rrset = dns.rrset.RRset (label, rdata.rdclass, rdata.rdtype)
-            for row in c.execute ("SELECT ttl,rrdata FROM rrs WHERE rrset_id = ? ORDER BY rrdata", [rrset_id]):
-                rrset.add (ttl = row[0], rd = dns.rdata.from_wire (rdata.rdclass, rdata.rdtype, row[1], 0, len (row[1])))
-    
-            rrset_name = pyccn.Name (zone_name)
-            if (len (label) > 0):
-                rrset_name = rrset_name.append (label.to_text ()) 
-            rrset_name = rrset_name.append ("dns")
-            rrset_name = rrset_name.append (dns.rdatatype.to_text (rdata.rdtype))
-            
-            signedInfo = pyccn.SignedInfo (key_digest = key.publicKeyID, key_locator = keyLocator, 
-                                           freshness = ttl)
-            # , py_timestamp = time.mktime (time.gmtime()))
-    
-            msg = dns.message.Message (id=0)
-            msg.answer.append (rrset)
-
-            co = pyccn.ContentObject (name = rrset_name, signed_info = signedInfo, content = msg.to_wire ())
-            co.sign (key)
-    
-            c.execute ("UPDATE rrsets SET ndndata = ? WHERE id = ?", [buffer(co.get_ccnb ()), rrset_id])
-
+            self._signRrSet (rrset_id)
             self._db.commit ()
+        except:
+            self._db.rollback ()
+            raise
 
-        # except Exception, e:
-        #     self._db.rollback ()
-        #     raise e
+    def _signRrSet (self, rrset_id):
+        c = self._db.cursor ()
+        c.execute ('''SELECT name,label,class,type FROM rrsets JOIN zones on zones.id = rrsets.zone_id 
+                             WHERE rrsets.id = ?''', [rrset_id])
+        row = c.fetchone ()
+        if row:
+            rdclass = row[2]
+            rdtype = row[3]
+            zone_name = pyccn.Name (ccnb_buffer = row[0])
+            zone_origin = dns.name.from_text (dnsify (str (zone_name)))
+
+            label = dns.name.from_text (row[1], origin = zone_origin)
+        else:
+            raise Error ("Non-existing RR set")
+            
+        key = pyccn.Key.getDefaultKey ()
+        keyLocator = pyccn.KeyLocator.getDefaultKeyLocator ()
+    
+        rrset = dns.rrset.RRset (label, rdclass, rdtype)
+        ttl = -1
+        for row in c.execute ("SELECT ttl,rrdata FROM rrs WHERE rrset_id = ? ORDER BY rrdata", [rrset_id]):
+            rrset.add (ttl = row[0], rd = dns.rdata.from_wire (rdclass, rdtype, row[1], 0, len (row[1])))
+            if (ttl == -1 or row[0] < ttl):
+                ttl = row[0]
+
+        rrset_name = pyccn.Name (zone_name)
+        if (len (label) > 0):
+            rrset_name = rrset_name.append (label.to_text ())
+        rrset_name = rrset_name.append ("dns")
+        rrset_name = rrset_name.append (dns.rdatatype.to_text (rdtype))
+        
+        signedInfo = pyccn.SignedInfo (key_digest = key.publicKeyID, key_locator = keyLocator, 
+                                       freshness = ttl)
+        # , py_timestamp = time.mktime (time.gmtime()))
+    
+        msg = dns.message.Message (id=0)
+        # msg.origin = zone_origin
+        msg.answer.append (rrset)
+
+        co = pyccn.ContentObject (name = rrset_name, signed_info = signedInfo, content = msg.to_wire ())
+
+        # print zone_origin
+        # print msg.to_wire ()
+        # print msg.to_wire (origin = zone_origin)
+        co.sign (key)
+    
+        c.execute ("UPDATE rrsets SET ndndata = ? WHERE id = ?", [buffer(co.get_ccnb ()), rrset_id])
+
+            
+    def rmAll (self, zone_id, label):
+        if not isinstance(label, dns.name.Name):
+            label = dns.name.from_text (label).relativize (dns.name.root)
+
+        countRrSets = self.countRrSets (zone_id, label)
+        if (countRrSets == 0):
+            return 0; # don't need to do anything special
+            
+        c = self._db.cursor ()
+        c.execute ("DELETE FROM rrsets WHERE zone_id = ? AND label = ?",
+                   [zone_id, label.to_text ()])
+
+        return countRrSets
+
+    def rmRrSet (self, zone_id, label, rdtype):
+        if not isinstance(label, dns.name.Name):
+            label = dns.name.from_text (label).relativize (dns.name.root)
+
+        if isinstance(rdtype, basestring):
+            rtype = dns.rdatatype.from_text (rdtype)
+
+        rrset = self.findRrSet (zone_id, label, rdtype)
+        if not rrset:
+            return False
+
+        c = self._db.cursor ()
+        c.execute ("DELETE FROM rrsets WHERE zone_id = ? AND id = ?", [zone_id, rrset['id']])
+        return True
+
+    def rmRR (self, zone_id, label, ttl, rdata):
+        if not isinstance(label, dns.name.Name):
+            label = dns.name.from_text (label).relativize (dns.name.root)
+
+        rr = self.findRdata (zone_id, label, rdata)
+        if not rr:
+            return False
+
+        c = self._db.cursor ()
+        c.execute ("DELETE FROM rrs WHERE rrset_id = ? AND id = ?", [rr['rrset_id'], rr['rr_id']])
+        
+        c.execute ("SELECT count(*) FROM rrs WHERE rrset_id = ?", [rr['rrset_id']])
+        if (c.fetchone ()[0] == 0):
+            c.execute ("DELETE FROM rrsets WHERE zone_id = ? AND id = ?", [zone_id, rr['rrset_id']])
+        else:
+            self._signRrSet (rr['rrset_id'])
+
+        return True

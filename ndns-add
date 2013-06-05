@@ -25,12 +25,12 @@ import pyccn
 ######################################################################
 ######################################################################
 
-parser = argparse.ArgumentParser(description='Add RR record to NDNS zone')
+parser = argparse.ArgumentParser(description='Add RR record(s) to NDNS zone')
 parser.add_argument('zone', metavar='zone', type=str,
                     help='''NDN name of the zone''')
 parser.add_argument('rr', metavar='rr', type=str, nargs='?', default="",
                     help='''Specification of RR to add. This should be a line in standard zone format, like "<TTL> <CLASS> <TYPE> <RRDATA>"
-                            For example: "3600 IN FH /ndn/ucla.edu"  or "FH /ndn/ucla.edu" (default zone TTL and class will be used).
+                            For example: "3600 IN FH /ndn/ucla.edu".
                             If this parameter not set, then input will be expected from standard input''')
 args = parser.parse_args()
 
@@ -65,10 +65,4 @@ if( __name__ == '__main__' ):
     
     for (name, ttl, rdata) in zone.iterate_rdatas ():
         print "Create record: '%s %d %s'" % (name, ttl, rdata.to_text ())
-        _ndns.addRR (zone_id, name.to_text (), ttl, rdata)
-
-    # zone.to_file (sys.stdout)
-
-    # rrset = dns.rrset.from_text (args.rr)
-
-    # _ndns.addRR (zone_id, "", args.ttl, rrset)
+        _ndns.addRR (zone_id, name, ttl, rdata)
