@@ -6,3 +6,4 @@ lib/pyccn
 *.bak
 *.bak~*
 *~*
+lib/setproctitle*

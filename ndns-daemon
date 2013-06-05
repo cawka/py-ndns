@@ -1,0 +1,108 @@
+#!/usr/bin/env python
+# -*- Mode:python; c-file-style:"gnu"; indent-tabs-mode:nil -*- */
+# 
+# Copyright (c) 2013, Regents of the University of California
+#                     Alexander Afanasyev
+# 
+# BSD license, See the doc/LICENSE file for more information
+# 
+# Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
+# 
+
+# make sure modules from lib/ are loaded
+import sys; sys.path = ["%s/lib" % sys.path[0]] + sys.path
+
+import sqlite3, iscpy, argparse, time, logging, logging.handlers
+import dns.rdataclass, dns.rdatatype, dns.rdata, dns.rrset, dns.zone
+import ndns
+import pyccn
+import daemon
+import signal
+import setproctitle
+
+######################################################################
+######################################################################
+######################################################################
+
+parser = argparse.ArgumentParser(description='NDNS daemon')
+parser.add_argument('-f', dest='foreground', action='store_true', default=False,
+                    help='''Keep daemon in foreground (do not daemonize)''')
+parser.add_argument('-d', dest='debug', action='store_true', default=False,
+                    help='''Include debug information in log output''')
+parser.add_argument('-q', dest='quiet', action='store_true', default=False,
+                    help='''Be quiet and do not write anything to stderr''')
+parser.add_argument('-l', dest='logfile', type=str,
+                    help='''Write logging to the specified logfile''')
+args = parser.parse_args()
+
+_LOG = logging.getLogger ("ndns.Daemon")
+_LOG.setLevel (logging.DEBUG if (args.debug) else logging.WARN)
+
+if args.foreground and not args.quiet:
+    _handler = logging.StreamHandler (sys.stderr)
+    _handler.setLevel (logging.DEBUG if (args.debug) else logging.WARN)
+    _handler.setFormatter (logging.Formatter('%(asctime)s %(name)s [%(levelname)s]  %(message)s', '%H:%M:%S'))
+    _LOG.addHandler (_handler)
+
+if args.logfile:
+    _handler = logging.handlers.RotatingFileHandler (args.logfile, maxBytes=10000000, backupCount=10)
+    _handler.setLevel (logging.DEBUG if (args.debug) else logging.WARN)
+    _handler.setFormatter (logging.Formatter('%(asctime)s %(name)s [%(levelname)s]  %(message)s'))
+    _LOG.addHandler (_handler)
+
+if ((args.quiet or not args.foreground) and not args.logfile):
+    _LOG.addHandler (logging.NullHandler ())
+
+######################################################################
+######################################################################
+######################################################################
+
+class NdnsDaemon:
+
+    def __init__ (self):
+        setproctitle.setproctitle ("ndns-daemon")
+        self._ndns = ndns.ndns ()
+        pass
+
+    def run (self):
+        _LOG.debug ('Daemon started')
+
+        self._face = pyccn.CCN ()
+
+        self._face.setInterestFilterSimple (pyccn.Name ("/basic/test"),
+                                            lambda name,interest: self.onRequest (name, interest))
+        
+        self._eventLoop = pyccn.EventLoop (self._face)
+        self._eventLoop.run ()
+
+        _LOG.debug ('Daemon stopped')
+
+    def onRequest (self, basename, interest):
+        _LOG.debug (">> basename [%s], interest [%s]" % (basename, interest.name))
+        return pyccn.RESULT_OK
+
+    def stop (self, signum, frame):
+        _LOG.debug ('Signal to stop')
+        self._eventLoop.stop ()
+
+    def reloadConfig (self, signum, frame):
+        print "reload config"
+        pass
+
+if( __name__ == '__main__' ):
+    ndns_daemon = NdnsDaemon ()
+
+    context = daemon.DaemonContext ()
+    context.stdout = sys.stdout
+    context.stderr = sys.stderr
+    context.detach_process = not args.foreground
+    
+    context.signal_map = {
+        signal.SIGTERM: lambda signum, frame: ndns_daemon.stop (signum, frame),
+        signal.SIGQUIT: lambda signum, frame: ndns_daemon.stop (signum, frame),
+        signal.SIGINT: None,
+        signal.SIGUSR1: lambda signum, frame: ndns_daemon.reload_program_config (signum, frame),
+    }
+    
+    with context:
+        ndns_daemon.run ()
