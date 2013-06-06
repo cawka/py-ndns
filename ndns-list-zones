@@ -35,5 +35,5 @@ if( __name__ == '__main__' ):
     _ndns = ndns.ndns ()
 
     sys.stdout.write ("# List of configured NDNS zones:\n")
-    for zone in _ndns.listZones ():
-        sys.stdout.write ("%s\n" % zone)
+    for zone_id, zone_name in _ndns.listZones ():
+        sys.stdout.write ("[%4d] %s\n" % (zone_id, zone_name))

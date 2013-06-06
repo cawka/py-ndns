@@ -87,7 +87,7 @@ END;
     def listZones (self):
         c = self._db.cursor ()
         for row in c.execute ("SELECT id, name FROM zones ORDER BY name"):
-            yield pyccn.Name (ccnb_buffer = row[1])
+            yield row[0], pyccn.Name (ccnb_buffer = row[1])
 
     def createZone (self, zone_name):
         c = self._db.cursor ()
@@ -126,7 +126,7 @@ END;
             msg = dns.message.from_wire (co.content)
             yield {"id":rrset[0], "rrset":msg.answer[0], "data":co}
         
-    def findRrSet (self, zone_id, label, rtype):
+    def findRrSet (self, zone_id, label, rtype, parseDnsMessage = True):
         c = self._db.cursor ()
         if not isinstance(label, dns.name.Name):
             label = dns.name.from_text (label).relativize (dns.name.root)
@@ -141,8 +141,11 @@ END;
             return None
         
         co = pyccn.ContentObject.from_ccnb (row[4])
-        msg = dns.message.from_wire (co.content)
-        return {"id":row[0], "rrset":msg.answer[0], "data":co}
+        if parseDnsMessage:
+            msg = dns.message.from_wire (co.content)
+            return {"id":row[0], "rrset":msg.answer[0], "data":co}
+        else:
+            return {"id":row[0], "data":co}
 
     def findRdata (self, zone_id, label, rdata):
         if not isinstance(label, dns.name.Name):
@@ -207,7 +210,7 @@ SELECT
             zone_name = pyccn.Name (ccnb_buffer = row[0])
             zone_origin = dns.name.from_text (dnsify (str (zone_name)))
 
-            label = dns.name.from_text (row[1], origin = zone_origin)
+            label = dns.name.from_text (row[1]).relativize (origin = dns.name.root)
         else:
             raise Error ("Non-existing RR set")
             
@@ -222,9 +225,9 @@ SELECT
                 ttl = row[0]
 
         rrset_name = pyccn.Name (zone_name)
+        rrset_name = rrset_name.append ("dns")
         if (len (label) > 0):
             rrset_name = rrset_name.append (label.to_text ())
-        rrset_name = rrset_name.append ("dns")
         rrset_name = rrset_name.append (dns.rdatatype.to_text (rdtype))
         
         signedInfo = pyccn.SignedInfo (key_digest = key.publicKeyID, key_locator = keyLocator, 
@@ -235,7 +238,7 @@ SELECT
         # msg.origin = zone_origin
         msg.answer.append (rrset)
 
-        co = pyccn.ContentObject (name = rrset_name, signed_info = signedInfo, content = msg.to_wire ())
+        co = pyccn.ContentObject (name = rrset_name, signed_info = signedInfo, content = msg.to_wire (origin = zone_origin))
 
         # print zone_origin
         # print msg.to_wire ()

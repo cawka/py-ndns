@@ -10,9 +10,11 @@
 # 
 
 # make sure modules from lib/ are loaded
-import sys; sys.path = ["%s/lib" % sys.path[0]] + sys.path
+import sys
+_WORKDIR = sys.path[0]
+sys.path = ["%s/lib" % _WORKDIR] + sys.path
 
-import sqlite3, iscpy, argparse, time, logging, logging.handlers
+import sqlite3, iscpy, argparse, time, logging, logging.handlers, os, functools
 import dns.rdataclass, dns.rdatatype, dns.rdata, dns.rrset, dns.zone
 import ndns
 import pyccn
@@ -58,51 +60,108 @@ if ((args.quiet or not args.foreground) and not args.logfile):
 ######################################################################
 
 class NdnsDaemon:
-
+#public:    
     def __init__ (self):
         setproctitle.setproctitle ("ndns-daemon")
-        self._ndns = ndns.ndns ()
-        pass
+        self._zones = []
 
     def run (self):
-        _LOG.debug ('Daemon started')
+        _LOG.info ('Daemon started')
 
+        self._ndns = ndns.ndns ()
         self._face = pyccn.CCN ()
 
-        self._face.setInterestFilterSimple (pyccn.Name ("/basic/test"),
-                                            lambda name,interest: self.onRequest (name, interest))
-        
+        self._startZoneServing ()
+
         self._eventLoop = pyccn.EventLoop (self._face)
         self._eventLoop.run ()
 
-        _LOG.debug ('Daemon stopped')
+        _LOG.info ('Daemon stopped')
 
-    def onRequest (self, basename, interest):
+    def terminate (self):
+        self._stopZoneServing ()
+        self._eventLoop.stop ()
+        self._face = None
+        self._ndns = None
+
+    def reloadConfig (self):
+        _LOG.info ('Reload zone information')
+        self._stopZoneServing ()
+        self._startZoneServing ()
+
+#private:
+    def _startZoneServing (self):
+        for zone_id, zone_name in self._ndns.listZones ():
+            _LOG.info ('>> Start serving zone [%s]' % zone_name)
+            self._face.setInterestFilterSimple (zone_name.append ("dns"),
+                                                functools.partial (self._onRequest, zone_id, zone_name))
+                                                # lambda name,interest: self._onRequest (zone_id, zone_name, name, interest))
+            self._zones.append ((zone_id, zone_name))
+
+    def _stopZoneServing (self):
+        for zone_id, zone_name in self._zones:
+            _LOG.info ('<< Stop serving zone [%s]' % zone_name)
+            self._face.clearInterestFilter (zone_name.append ("dns"))
+        self._zones = []
+
+    def _onRequest (self, zoneId, zoneName, basename, interest):
         _LOG.debug (">> basename [%s], interest [%s]" % (basename, interest.name))
+
+        _LOG.debug ("zoneId: [%d], zoneName: [%s]" % (zoneId, zoneName))
+
+        if (len(interest.name) <= len(zoneName) + 1):
+            _LOG.debug ("Invalid request. Ignoring")
+            return pyccn.RESULT_OK
+
+        try:
+            rrtype = dns.rdatatype.from_text (interest.name[-1])
+        except Exception, e:
+            _LOG.debug ("Invalid request: unknown or unrecognized RR type [%s] (%s)" % (interest.name[-1], e))
+            return pyccn.RESULT_OK
+
+        try:
+            label = dns.name.from_text (ndns.dnsify (str (pyccn.Name (interest.name[len(basename):-1])))).relativize (origin = dns.name.root)
+        except Exception, e:
+            _LOG.debug ("Invalid request: label [%s] cannot be dnsified (%s)" % (interest.name[len(basename):-1], e))
+            return pyccn.RESULT_OK
+
+        rrset = self._ndns.findRrSet (zoneId, label, rrtype, parseDnsMessage = False)
+
+        # the big question is what to do when there is no data..
+        # .. this is more a theory question, than the implementation. For now we just don't return anything and client will timeout
+
+        if not rrset:
+            _LOG.debug ("(!!! no action defined yet!!!) The requested record (%s %s) not found in zone [%s]" %
+                        (label.to_text (), dns.rdatatype.to_text (rrtype), zoneName))
+            return pyccn.RESULT_OK
+
+        if interest.name[:] != rrset['data'].name[:len(interest.name)]:
+            _LOG.debug ("Request is not in a canonical form (e.g., case mistmatch), requested data found, but cannot be returned")
+            return pyccn.RESULT_OK
+
+        _LOG.debug ("<< Found a valid record, returning data object [%s]" % rrset['data'].name)
+        self._face.put (rrset['data'])
+        
         return pyccn.RESULT_OK
 
-    def stop (self, signum, frame):
-        _LOG.debug ('Signal to stop')
-        self._eventLoop.stop ()
-
-    def reloadConfig (self, signum, frame):
-        print "reload config"
-        pass
-
+# main
 if( __name__ == '__main__' ):
     ndns_daemon = NdnsDaemon ()
 
-    context = daemon.DaemonContext ()
-    context.stdout = sys.stdout
-    context.stderr = sys.stderr
-    context.detach_process = not args.foreground
+    context = daemon.DaemonContext (
+        working_directory = _WORKDIR,
+        detach_process = not args.foreground,
+        )
+    if args.foreground:
+        context.stdout = sys.stdout
+        context.stderr = sys.stderr
     
     context.signal_map = {
-        signal.SIGTERM: lambda signum, frame: ndns_daemon.stop (signum, frame),
-        signal.SIGQUIT: lambda signum, frame: ndns_daemon.stop (signum, frame),
-        signal.SIGINT: None,
-        signal.SIGUSR1: lambda signum, frame: ndns_daemon.reload_program_config (signum, frame),
+        signal.SIGTERM: lambda signum, frame: ndns_daemon.terminate (),
+        signal.SIGQUIT: lambda signum, frame: ndns_daemon.terminate (),
+        signal.SIGINT:  lambda signum, frame: ndns_daemon.terminate (),
+        signal.SIGUSR1: lambda signum, frame: ndns_daemon.reloadConfig (),
     }
-    
+
     with context:
         ndns_daemon.run ()

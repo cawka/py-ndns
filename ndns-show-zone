@@ -62,3 +62,5 @@ if( __name__ == '__main__' ):
                                          dns.rdataclass.to_text (rdata.rdclass), 
                                          dns.rdatatype.to_text (rdata.rdtype), 
                                          rdata.to_text ()))
+
+        # print row['data'].name
