@@ -1,26 +1,29 @@
 #!/usr/bin/env python
 # -*- Mode:python; c-file-style:"gnu"; indent-tabs-mode:nil -*- */
-# 
+#
 # Copyright (c) 2013, Regents of the University of California
 #                     Alexander Afanasyev
-# 
+#
 # BSD license, See the doc/LICENSE file for more information
-# 
+#
 # Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
-# 
+#
 
 # make sure modules from lib/ are loaded
 import sys
 _WORKDIR = sys.path[0]
 sys.path = ["%s/lib" % _WORKDIR] + sys.path
 
-import sqlite3, iscpy, argparse, time, logging, logging.handlers, os, functools
-import dns.rdataclass, dns.rdatatype, dns.rdata, dns.rrset, dns.zone
-import ndns
-import pyccn
-import daemon
-import signal
+import sqlite3, iscpy, argparse, time, logging, logging.handlers
+import os, functools, signal, daemon
+
+#install from contrib/
 import setproctitle
+import pyccn
+import dns.rdataclass, dns.rdatatype, dns.rdata, dns.rrset, dns.zone
+
+# part of lib/
+import ndns
 
 ######################################################################
 ######################################################################
@@ -60,7 +63,7 @@ if ((args.quiet or not args.foreground) and not args.logfile):
 ######################################################################
 
 class NdnsDaemon:
-#public:    
+#public:
     def __init__ (self):
         setproctitle.setproctitle ("ndns-daemon")
         self._zones = []
@@ -89,13 +92,16 @@ class NdnsDaemon:
         self._stopZoneServing ()
         self._startZoneServing ()
 
+    def updateLocalPrefix (self, oldPrefix, newPrefix):
+        _LOG.info ("Update local prefix from [%s] to [%s]" % (oldPrefix, newPrefix))
+        pass
+
 #private:
     def _startZoneServing (self):
         for zone_id, zone_name in self._ndns.listZones ():
             _LOG.info ('>> Start serving zone [%s]' % zone_name)
             self._face.setInterestFilterSimple (zone_name.append ("dns"),
                                                 functools.partial (self._onRequest, zone_id, zone_name))
-                                                # lambda name,interest: self._onRequest (zone_id, zone_name, name, interest))
             self._zones.append ((zone_id, zone_name))
 
     def _stopZoneServing (self):
@@ -141,7 +147,7 @@ class NdnsDaemon:
 
         _LOG.debug ("<< Found a valid record, returning data object [%s]" % rrset['data'].name)
         self._face.put (rrset['data'])
-        
+
         return pyccn.RESULT_OK
 
 # main
@@ -155,7 +161,7 @@ if( __name__ == '__main__' ):
     if args.foreground:
         context.stdout = sys.stdout
         context.stderr = sys.stderr
-    
+
     context.signal_map = {
         signal.SIGTERM: lambda signum, frame: ndns_daemon.terminate (),
         signal.SIGQUIT: lambda signum, frame: ndns_daemon.terminate (),
@@ -164,4 +170,8 @@ if( __name__ == '__main__' ):
     }
 
     with context:
+        discovery = pyccn.LocalPrefixDiscovery (periodicity = 5)
+        discovery.subscribe ("ndns", ndns_daemon.updateLocalPrefix)
+
         ndns_daemon.run ()
+        discovery.shutdown ()
