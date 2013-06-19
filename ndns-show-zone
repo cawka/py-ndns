@@ -27,6 +27,8 @@ import pyccn
 parser = argparse.ArgumentParser(description='List records in NDNS zone')
 parser.add_argument('zone', metavar='zone', type=str,
                     help='''NDN name of the zone''')
+parser.add_argument('--wire', dest='show_wire', action='store_true', default=False,
+                    help='''Display zone content based on wire-formatted DATA packets''')
 args = parser.parse_args()
 
 if (not args.zone):
@@ -38,7 +40,7 @@ if (not args.zone):
 ######################################################################
 
 if( __name__ == '__main__' ):
-    _ndns = ndns.ndns ()
+    _ndns = ndns.ndns_session ()
 
     try:
         zone_ndn = pyccn.Name (args.zone)
@@ -48,19 +50,25 @@ if( __name__ == '__main__' ):
         parser.print_help ()
         exit (1)
 
-    zone_id = _ndns.doesZoneExists (zone_ndn)
-    if not zone_id:
+    zone = _ndns.query (ndns.Zone).filter (ndns.Zone.has_name (zone_ndn)).first ()
+    if not zone:
         sys.stderr.write ("ERROR: zone [%s] is not configured\n" % zone_ndn)
         exit (1)
 
     sys.stdout.write (";; Origin: %s (%s)\n" % (zone_dns, zone_ndn))
-    for row in _ndns.listRrSets (zone_id):
-        rrset = row['rrset']
-        for rdata in rrset.items:
-            print ("%s %d %s %s   %s" % (rrset.name.relativize (zone_dns), 
-                                         rrset.ttl,
-                                         dns.rdataclass.to_text (rdata.rdclass), 
-                                         dns.rdatatype.to_text (rdata.rdtype), 
-                                         rdata.to_text ()))
+    
+    if args.show_wire:
+        for row in zone.rrsets:
+            print ";; DATA packet [%s]" % row.ndndata.name
 
-        # print row['data'].name
+            rrset = row.dns_msg.answer[0]
+            for rdata in rrset.items:
+                print ("%s %d %s %s   %s" % (rrset.name.relativize (zone_dns), 
+                                             rrset.ttl,
+                                             dns.rdataclass.to_text (rdata.rdclass), 
+                                             dns.rdatatype.to_text (rdata.rdtype), 
+                                             rdata.to_text ()))
+    else:
+        for rrset in zone.rrsets:
+            for rr in rrset.rrs:
+                print rr.dns_rrdata

@@ -12,3 +12,8 @@
 from dnsifier import *
 from ndns import *
 
+from zone import *
+from rrset import *
+from rr import *
+
+
