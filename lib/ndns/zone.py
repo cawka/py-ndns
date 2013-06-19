@@ -16,6 +16,7 @@ from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 
 from ndns import Base
+from dnsifier import *
 
 import dns.rrset
 import dns.message
@@ -32,6 +33,10 @@ class Zone (Base):
     @property
     def name (self):
         return pyccn.Name (ccnb_buffer = self._name)
+
+    @property
+    def dns_name (self):
+        return dns.name.from_text (dnsify (str (self.name)))
 
     @hybrid_method
     def has_name (self, other):

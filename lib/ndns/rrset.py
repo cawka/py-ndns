@@ -33,7 +33,7 @@ class RRSet (Base):
     label = Column (String)
     rclass = Column (Integer)
     rtype = Column (Integer)
-    _ndndata = deferred (Column ("ndndata", Binary))
+    _ndndata = Column ("ndndata", Binary)
     
     zone_id_label_rclass_rtype = UniqueConstraint ("zone_id", "label", "rclass", "rtype")
 
@@ -42,13 +42,17 @@ class RRSet (Base):
         return pyccn.ContentObject.from_ccnb (self._ndndata)
 
     @property
+    def dns_label (self):
+        return dns.name.from_text (self.label).relativize (dns.name.root)
+
+    @property
     def dns_msg (self):
         return dns.message.from_wire (self.ndndata.content)
 
     def refresh_ndndata (self):
         self._ndndata = ndns.createSignedRRsetData (self).get_ccnb ()
 
-event.listen (RRSet, 'before_insert', lambda mapper, connection, target: target.refresh_ndndata ())
+# event.listen (RRSet, 'before_insert', lambda mapper, connection, target: target.refresh_ndndata ())
 
 def check_if_soa (target, value, initiator):
     if target.rtype == dns.rdatatype.SOA:

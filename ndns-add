@@ -12,7 +12,7 @@
 # make sure modules from lib/ are loaded
 import sys; sys.path = ["%s/lib" % sys.path[0]] + sys.path
 
-import sqlite3, iscpy, argparse, time
+import argparse, time
 import dns.rdataclass
 import dns.rdatatype
 import dns.rdata
@@ -21,29 +21,29 @@ import dns.zone
 import ndns
 import pyccn
 
-######################################################################
-######################################################################
-######################################################################
-
-parser = argparse.ArgumentParser(description='Add RR record(s) to NDNS zone')
-parser.add_argument('zone', metavar='zone', type=str,
-                    help='''NDN name of the zone''')
-parser.add_argument('rr', metavar='rr', type=str, nargs='?', default="",
-                    help='''Specification of RR to add. This should be a line in standard zone format, like "<TTL> <CLASS> <TYPE> <RRDATA>"
-                            For example: "3600 IN FH /ndn/ucla.edu".
-                            If this parameter not set, then input will be expected from standard input''')
-args = parser.parse_args()
-
-if (not args.zone):
-    parser.print_help ()
-    exit (1)
-
-######################################################################
-######################################################################
-######################################################################
-
 if( __name__ == '__main__' ):
-    _ndns = ndns.ndns ()
+
+    ######################################################################
+    ######################################################################
+    ######################################################################
+    
+    parser = argparse.ArgumentParser(description='Add RR record(s) to NDNS zone')
+    parser.add_argument('zone', metavar='zone', type=str,
+                        help='''NDN name of the zone''')
+    parser.add_argument('rr', metavar='rr', type=str, nargs='?', default="",
+                        help='''Specification of RR to add. This should be a line in standard zone format, like "<TTL> <CLASS> <TYPE> <RRDATA>"
+                                For example: "3600 IN FH /ndn/ucla.edu".
+                                If this parameter not set, then input will be expected from standard input''')
+    args = parser.parse_args()
+    
+    if (not args.zone):
+        parser.print_help ()
+        exit (1)
+    ######################################################################
+    ######################################################################
+    ######################################################################
+    
+    _ndns = ndns.ndns_session ()
 
     try:
         zone_ndn = pyccn.Name (args.zone)
@@ -53,16 +53,25 @@ if( __name__ == '__main__' ):
         parser.print_help ()
         exit (1)
 
-    zone_id = _ndns.doesZoneExists (zone_ndn)
-    if not zone_id:
+    zone = _ndns.query (ndns.Zone).filter (ndns.Zone.has_name (zone_ndn)).first ()
+    if not zone:
         sys.stderr.write ("ERROR: zone [%s] is not configured\n" % zone_ndn)
         exit (1)
 
+    origin = dns.name.from_text (zone_dns)
+
     if args.rr:
-        zone = dns.zone.from_text (args.rr, origin = dns.name.from_text (zone_dns), check_origin = False)
+        zonefile = dns.zone.from_text (args.rr, origin = origin, check_origin = False)
     else:
-        zone = dns.zone.from_file (sys.stdin, origin = dns.name.from_text (zone_dns), check_origin = False)
+        zonefile = dns.zone.from_file (sys.stdin, origin = origin, check_origin = False)
     
-    for (name, ttl, rdata) in zone.iterate_rdatas ():
-        print "Create record: '%s %d %s'" % (name, ttl, rdata.to_text ())
-        _ndns.addRR (zone_id, name, ttl, rdata)
+    default_rtt = zone.soa[0].rrs[0].ttl
+
+    for (name, ttl, rdata) in zonefile.iterate_rdatas ():
+        if ttl == 0:
+            ttl = default_rtt
+
+        print "Create record: '%s %s %d %s'" % (name, dns.rdatatype.to_text (rdata.rdtype), ttl, rdata.to_text ())
+        ndns.add_rr (_ndns, zone, origin, name, ttl, rdata)
+
+    _ndns.commit ()

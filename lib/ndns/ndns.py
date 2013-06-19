@@ -20,11 +20,17 @@ from rrset import *
 from rr import *
 from dnsifier import *
 
+import dns.rdataclass
+import dns.rdatatype
+import dns.rdata
+import dns.rrset
+import dns.zone
+
 def ndns_session (config = "etc/ndns.conf"):
     conf = iscpy.ParseISCString (open (config).read ())
     zonedb = conf['options']['zonedb'].strip ("\"'");
     db = create_engine ('sqlite:///%s' % zonedb)
-    db.echo = True
+    # db.echo = True
     
     Base.metadata.create_all (db)
     
@@ -73,3 +79,28 @@ def createSignedRRsetData (rrset):
 
     co.sign (key)
     return co
+
+def add_rr (session, zone, origin, name, ttl, rdata):
+    # print "Create record: '%s %s %d %s'" % (name, dns.rdatatype.to_text (rdata.rdtype), ttl, rdata.to_text ())
+
+    rrset = session.query (ndns.RRSet).\
+        with_parent (zone).\
+        filter_by (label = name.to_text (), rclass = rdata.rdclass, rtype = rdata.rdtype).\
+        first ()
+    
+    if not rrset:
+        rrset = ndns.RRSet (label = name.to_text (), rclass = rdata.rdclass, rtype = rdata.rdtype)
+        zone.rrsets.append (rrset)
+    else:        
+        if (dns.rdatatype.is_singleton (rdata.rdtype)):
+            rrset.rrs = []
+        else:
+            # Do some checking that were previously done elsewhere
+            for old_rdata in session.query (ndns.RR).with_parent (rrset).filter (ndns.RR.has_rrdata (rdata, origin)):
+                session.delete (old_rdata)
+
+    rr = ndns.RR (ttl = ttl)
+    rrset.rrs.append (rr)  
+    rr.rrdata = rdata
+
+    rrset.refresh_ndndata ()

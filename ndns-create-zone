@@ -78,8 +78,11 @@ if( __name__ == '__main__' ):
     rrset = ndns.RRSet (label = "@", rclass = dns.rdataclass.IN, rtype = dns.rdatatype.SOA)
     zone.rrsets.append (rrset)
 
-    rr = ndns.RR (ttl = args.ttl, rrdata = soa)
+    rr = ndns.RR (ttl = args.ttl)
     rrset.rrs.append (rr)
+    rr.rrdata = soa
+
+    rrset.refresh_ndndata ()
 
     _ndns.add (zone)
     _ndns.commit ()

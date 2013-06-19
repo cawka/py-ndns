@@ -10,7 +10,7 @@
 # 
 
 from sqlalchemy import Table, MetaData, Column, ForeignKey, Integer, String, Binary, UniqueConstraint, event
-from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 from ndns import Base
 import dns.message
 
@@ -32,8 +32,12 @@ class RR (Base):
 
     @rrdata.setter
     def rrdata (self, value):
-        self._rrdata = buffer (value.to_digestable ())
+        self._rrdata = buffer (value.to_digestable (origin = self.rrset.zone.dns_name))
 
-event.listen (RR, 'before_insert', lambda mapper, connection, target: target.rrset.refresh_ndndata ())
-event.listen (RR, 'before_update', lambda mapper, connection, target: target.rrset.refresh_ndndata ())
-event.listen (RR, 'before_delete', lambda mapper, connection, target: target.rrset.refresh_ndndata ())
+    @hybrid_method
+    def has_rrdata (self, other, origin):
+        return self._rrdata == buffer (other.to_digestable (origin = origin))
+
+# event.listen (RR, 'before_insert', lambda mapper, connection, target: target.rrset.refresh_ndndata ())
+# event.listen (RR, 'before_update', lambda mapper, connection, target: target.rrset.refresh_ndndata ())
+# event.listen (RR, 'before_delete', lambda mapper, connection, target: target.rrset.refresh_ndndata ())

@@ -42,7 +42,7 @@ if (not args.zone):
 ######################################################################
 
 if( __name__ == '__main__' ):
-    _ndns = ndns.ndns ()
+    _ndns = ndns.ndns_session ()
 
     try:
         zone_ndn = pyccn.Name (args.zone)
@@ -52,11 +52,13 @@ if( __name__ == '__main__' ):
         parser.print_help ()
         exit (1)
 
-    zone_id = _ndns.doesZoneExists (zone_ndn)
-    if zone_id:
-        sys.stderr.write ("ERROR: zone [%s] already configured\n" % zone_ndn)
+    zone = _ndns.query (ndns.Zone).filter (ndns.Zone.has_name (zone_ndn)).first ()
+    if zone:
+        sys.stderr.write ("ERROR: zone [%s] is already configured\n" % zone_ndn)
         sys.stderr.write ("       If you want to recrecrete the zone, delete it first using `ndn-destroy-zone` command\n")
         exit (1)
+
+    origin = dns.name.from_text (zone_dns)
 
     try:
         if args.file == '-':
@@ -64,13 +66,25 @@ if( __name__ == '__main__' ):
         else:
             fin = open (args.file, 'rt')
         
-        zone = dns.zone.from_file (fin, origin = dns.name.from_text (zone_dns), check_origin = True)
-        
-        zone_id = _ndns.createZone (zone_ndn)
+        zonefile = dns.zone.from_file (fin, origin = origin, check_origin = True)
 
-        for (name, ttl, rdata) in zone.iterate_rdatas ():
-            print "Import record: '%s %d %s'" % (name, ttl, rdata.to_text ())
-            _ndns.addRR (zone_id, name, ttl, rdata)
+        zone = ndns.Zone (name = zone_ndn)
+        _ndns.add (zone)
+
+        soa = zonefile.find_rdataset (origin, dns.rdatatype.SOA)
+        print "Import SOA record: '%s %d %s'" % ('.', soa.ttl, soa.to_text ())
+        ndns.add_rr (_ndns, zone, origin, dns.name.from_text ("@"), soa.ttl, soa.items[0])
+
+        _ndns.commit ()
         
+        for (name, ttl, rdata) in zonefile.iterate_rdatas ():
+            if rdata.rdtype == dns.rdatatype.SOA:
+                continue
+
+            print "Import record: '%s %d %s'" % (name, ttl, rdata.to_text ())
+            ndns.add_rr (_ndns, zone, origin, name, ttl, rdata)
+
+        _ndns.commit ()
+
     except dns.zone.NoSOA:
         sys.stderr.write ("ERROR: zone file [%s] does not contain a valid SOA record\n" % args.file)
