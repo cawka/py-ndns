@@ -32,8 +32,8 @@ args = parser.parse_args()
 ######################################################################
 
 if( __name__ == '__main__' ):
-    _ndns = ndns.ndns ()
+    _ndns = ndns.ndns_session ()
 
     sys.stdout.write ("# List of configured NDNS zones:\n")
-    for zone_id, zone_name in _ndns.listZones ():
-        sys.stdout.write ("[%4d] %s\n" % (zone_id, zone_name))
+    for zone in _ndns.query (ndns.Zone):
+        sys.stdout.write ("[%4d] %s\n" % (zone.id, zone.name))

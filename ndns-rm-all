@@ -45,7 +45,7 @@ if (not args.zone or not args.label):
 ######################################################################
 
 if( __name__ == '__main__' ):
-    _ndns = ndns.ndns ()
+    _ndns = ndns.ndns_session ()
 
     try:
         zone_ndn = pyccn.Name (args.zone)
@@ -55,18 +55,30 @@ if( __name__ == '__main__' ):
         parser.print_help ()
         exit (1)
 
-    zone_id = _ndns.doesZoneExists (zone_ndn)
-    if not zone_id:
+    zone = _ndns.query (ndns.Zone).filter (ndns.Zone.has_name (zone_ndn)).first ()
+    if not zone:
         sys.stderr.write ("ERROR: zone [%s] is not configured\n" % zone_ndn)
         exit (1)
 
+    query = _ndns.\
+            query (ndns.RRSet).\
+            with_parent (zone).\
+            filter_by (label = args.label)
+
     if args.force:
-        count = _ndns.rmAll (zone_id, args.label)
+        count = 0
+        for rrset in query:
+            print rrset.dns_msg.to_text ()
+            # _ndns.delete (rrset)
+            count = count + 1
+
+        _ndns.commit ()
+
         if (count > 0):
             sys.stdout.write ("%d RR sets have been deleted\n" % count)
         else:
             sys.stderr.write ("ERROR: no records for the label [%s] are found in zone [%s]\n" % (args.label, zone_ndn))
     else:
-        count = _ndns.countRrSets (zone_id, args.label)
+        count = query.count ()
         sys.stdout.write ("%d RR sets to be deleted (use -f to delete)\n" % count)
     

@@ -44,7 +44,7 @@ if (not args.zone or not args.label or not args.type):
 ######################################################################
 
 if( __name__ == '__main__' ):
-    _ndns = ndns.ndns ()
+    _ndns = ndns.ndns_session ()
 
     try:
         zone_ndn = pyccn.Name (args.zone)
@@ -54,12 +54,21 @@ if( __name__ == '__main__' ):
         parser.print_help ()
         exit (1)
 
-    zone_id = _ndns.doesZoneExists (zone_ndn)
-    if not zone_id:
+    zone = _ndns.query (ndns.Zone).filter (ndns.Zone.has_name (zone_ndn)).first ()
+    if not zone:
         sys.stderr.write ("ERROR: zone [%s] is not configured\n" % zone_ndn)
         exit (1)
 
-    ret = _ndns.rmRrSet (zone_id, args.label, args.type)
+    ret = False
+    for rrset in _ndns.\
+            query (ndns.RRSet).\
+            with_parent (zone).\
+            filter_by (label = args.label, rclass = dns.rdataclass.IN, rtype = dns.rdatatype.from_text (args.type)):
+        ret = True
+        _ndns.delete (rrset)
+
+    _ndns.commit ()
+
     if ret:
         sys.stdout.write ("RR set [%s %s] removed from the zone [%s]\n" % (args.label, args.type, zone_ndn))
     else:

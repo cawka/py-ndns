@@ -44,7 +44,7 @@ if (not args.zone or not args.type):
 ######################################################################
 
 if( __name__ == '__main__' ):
-    _ndns = ndns.ndns ()
+    _ndns = ndns.ndns_session ()
 
     try:
         zone_ndn = pyccn.Name (args.zone)
@@ -54,14 +54,16 @@ if( __name__ == '__main__' ):
         parser.print_help ()
         exit (1)
 
-    zone_id = _ndns.doesZoneExists (zone_ndn)
-    if not zone_id:
+    zone = _ndns.query (ndns.Zone).filter (ndns.Zone.has_name (zone_ndn)).first ()
+    if not zone:
         sys.stderr.write ("ERROR: zone [%s] is not configured\n" % zone_ndn)
         exit (1)
 
-    rrset = _ndns.findRrSet (zone_id, args.label, args.type)
+    rrset = _ndns.query (ndns.RRSet).with_parent (zone).filter_by (label = args.label, 
+                                                                   rtype = dns.rdatatype.from_text (args.type)).first ()
     sys.stdout.write (";; Origin: %s (%s)\n" % (zone_dns, zone_ndn))
     if rrset:
-        print rrset['rrset'].to_text (origin = zone_dns)
+        print ";; DATA packet [%s]" % rrset.ndndata.name
+        print rrset.dns_msg.to_text (origin = zone_dns)
     else:
         sys.stdout.write (";; Requested RR set is not found\n");
