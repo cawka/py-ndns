@@ -24,11 +24,19 @@ import dns.message
 class Zone (Base):
     __tablename__ = "zones"
     rrsets = relationship ("RRSet", backref="zone", cascade="all, delete, delete-orphan")
+    keys = relationship ("Key", backref="zone", cascade="all, delete, delete-orphan")
     soa = relationship ("RRSet", #viewonly=True, 
                         primaryjoin = "and_(Zone.id==RRSet.zone_id, RRSet.rclass == %d, RRSet.rtype == %d)" % (dns.rdataclass.IN, dns.rdatatype.SOA))
 
     id = Column (Integer, primary_key = True)
     _name = Column ("name", Binary, index=True, unique=True)
+
+    default_key_id = Column (Integer)
+    default_key = relationship ("Key", 
+                                uselist=False, post_update=True,
+                                primaryjoin="Zone.default_key_id == Key.id",
+                                foreign_keys="Zone.default_key_id",
+                                remote_side="Key.id")
 
     @property
     def name (self):

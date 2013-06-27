@@ -71,7 +71,7 @@ class NdnsDaemon:
     def run (self):
         _LOG.info ('Daemon started')
 
-        self._ndns = ndns.ndns ()
+        self._ndns = ndns.ndns_session ()
         self._face = pyccn.CCN ()
 
         self._startZoneServing ()
@@ -98,40 +98,47 @@ class NdnsDaemon:
 
 #private:
     def _startZoneServing (self):
-        for zone_id, zone_name in self._ndns.listZones ():
-            _LOG.info ('>> Start serving zone [%s]' % zone_name)
-            self._face.setInterestFilterSimple (zone_name.append ("dns"),
-                                                functools.partial (self._onRequest, zone_id, zone_name))
-            self._zones.append ((zone_id, zone_name))
+        for zone in self._ndns.query (ndns.Zone):
+            _LOG.info ('>> Start serving zone [%s]' % zone.name)
+            self._face.setInterestFilterSimple (zone.name.append ("DNS"),
+                                                functools.partial (self._onRequest, zone))
+            self._zones.append (zone)
 
     def _stopZoneServing (self):
-        for zone_id, zone_name in self._zones:
-            _LOG.info ('<< Stop serving zone [%s]' % zone_name)
-            self._face.clearInterestFilter (zone_name.append ("dns"))
+        for zone in self._zones:
+            _LOG.info ('<< Stop serving zone [%s]' % zone.name)
+            self._face.clearInterestFilter (zone.name.append ("DNS"))
         self._zones = []
 
-    def _onRequest (self, zoneId, zoneName, basename, interest):
+    def _onRequest (self, zone, basename, interest):
         _LOG.debug (">> basename [%s], interest [%s]" % (basename, interest.name))
 
-        _LOG.debug ("zoneId: [%d], zoneName: [%s]" % (zoneId, zoneName))
+        _LOG.debug ("zoneId: [%d], zoneName: [%s]" % (zone.id, zone.name))
 
-        if (len(interest.name) <= len(zoneName) + 1):
+        if (len(interest.name) <= len(zone.name) + 1):
             _LOG.debug ("Invalid request. Ignoring")
             return pyccn.RESULT_OK
 
+
+        if interest.name[-1][0] == '\xFD':
+            # allow version to be specified, but ignore it for the database lookup
+            request_name = pyccn.Name (interest.name[:-1])
+        else:
+            request_name = interest.name
+
         try:
-            rrtype = dns.rdatatype.from_text (interest.name[-1])
+            rrtype = dns.rdatatype.from_text (request_name[-1])
         except Exception, e:
-            _LOG.debug ("Invalid request: unknown or unrecognized RR type [%s] (%s)" % (interest.name[-1], e))
+            _LOG.debug ("Invalid request: unknown or unrecognized RR type [%s] (%s)" % (request_name[-1], e))
             return pyccn.RESULT_OK
 
         try:
-            label = dns.name.from_text (ndns.dnsify (str (pyccn.Name (interest.name[len(basename):-1])))).relativize (origin = dns.name.root)
+            label = dns.name.from_text (ndns.dnsify (str (pyccn.Name (request_name[len(basename):-1])))).relativize (origin = dns.name.root)
         except Exception, e:
-            _LOG.debug ("Invalid request: label [%s] cannot be dnsified (%s)" % (interest.name[len(basename):-1], e))
+            _LOG.debug ("Invalid request: label [%s] cannot be dnsified (%s)" % (request_name[len(basename):-1], e))
             return pyccn.RESULT_OK
 
-        rrset = self._ndns.findRrSet (zoneId, label, rrtype, parseDnsMessage = False)
+        rrset = self._ndns.query (ndns.RRSet).with_parent (zone).filter_by (label = label.to_text (), rtype = rrtype).first ()
 
         # the big question is what to do when there is no data..
         # .. this is more a theory question, than the implementation. For now we just don't return anything and client will timeout
@@ -141,12 +148,14 @@ class NdnsDaemon:
                         (label.to_text (), dns.rdatatype.to_text (rrtype), zoneName))
             return pyccn.RESULT_OK
 
-        if interest.name[:] != rrset['data'].name[:len(interest.name)]:
+        dataPacket = rrset.ndndata
+        if interest.name[:] != dataPacket.name[:len(interest.name)]:
             _LOG.debug ("Request is not in a canonical form (e.g., case mistmatch), requested data found, but cannot be returned")
+            _LOG.debug ("        Could be version mistmatch")
             return pyccn.RESULT_OK
 
-        _LOG.debug ("<< Found a valid record, returning data object [%s]" % rrset['data'].name)
-        self._face.put (rrset['data'])
+        _LOG.debug ("<< Found a valid record, returning data object [%s]" % dataPacket.name)
+        self._face.put (dataPacket)
 
         return pyccn.RESULT_OK
 

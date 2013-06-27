@@ -18,6 +18,7 @@ Base = declarative_base ()
 from zone import *
 from rrset import *
 from rr import *
+from key import *
 from dnsifier import *
 
 import dns.rdataclass
@@ -28,56 +29,67 @@ import dns.zone
 
 def ndns_session (config = "etc/ndns.conf"):
     conf = iscpy.ParseISCString (open (config).read ())
-    zonedb = conf['options']['zonedb'].strip ("\"'");
+    zonedb = conf['options']['zonedb'].strip ("\"'")
     db = create_engine ('sqlite:///%s' % zonedb)
     # db.echo = True
     
     Base.metadata.create_all (db)
     
     sm = sessionmaker (bind = db)
-    return sm ()
+    session = sm ()
+    session.conf = conf
+    return session
 
-def createSignedRRsetData (rrset):
+def createSignedRRsetData (session, rrset, key):
     label = dns.name.from_text (rrset.label).relativize (dns.name.root)
 
     rdclass = rrset.rclass
     rdtype = rrset.rtype
 
-    soa = rrset.zone.soa[0]
+    # soa = rrset.zone.soa[0]
 
     zone_name = rrset.zone.name
     zone_origin = dns.name.from_text (dnsify (str (zone_name)))
 
-    key = pyccn.Key.getDefaultKey ()
-    keyLocator = pyccn.KeyLocator.getDefaultKeyLocator ()
-
-    newrrset = dns.rrset.RRset (label, rdclass, rdtype)
     ttl = -1
-    for rr in rrset.rrs:
-        newrrset.add (ttl = rr.ttl, rd = dns.rdata.from_wire (rdclass, rdtype, rr.rrdata, 0, len (rr.rrdata)))
-        if (ttl == -1 or rr.ttl < ttl):
-            ttl = rr.ttl
-
-    if ttl <= 1:
-        ttl = soa.rrs[0].ttl
-
+    if rdtype == dns.rdatatype.NDNCERT:
+        # Ok. Doing some cheat, treating NDNCERT data completely differently
+        content = rrset.rrs[0].dns_rrdata.cert
+        if (rrset.rrs[0].ttl < ttl):
+            ttl = rrset.rrs[0].ttl
+    else:
+        newrrset = dns.rrset.RRset (label, rdclass, rdtype)
+        ttl = -1
+        for rr in rrset.rrs:
+            newrrset.add (ttl = rr.ttl, rd = dns.rdata.from_wire (rdclass, rdtype, rr.rrdata, 0, len (rr.rrdata)))
+            if (ttl == -1 or rr.ttl < ttl):
+                ttl = rr.ttl
+    
+        msg = dns.message.Message (id=0)
+        msg.answer.append (newrrset)
+    
+        content = msg.to_wire (origin = zone_origin)
+    
+    if ttl <= -1:
+        ttl = 3600
+        # ttl = soa.rrs[0].ttl
+    
     rrset_name = pyccn.Name (zone_name)
-    rrset_name = rrset_name.append ("dns")
+    rrset_name = rrset_name.append ("DNS")
     if (len (label) > 0):
         rrset_name = rrset_name.append (label.to_text ())
     rrset_name = rrset_name.append (dns.rdatatype.to_text (rdtype))
     rrset_name = rrset_name.appendVersion ()
     
-    signedInfo = pyccn.SignedInfo (key_digest = key.publicKeyID, key_locator = keyLocator, 
-                                   freshness = ttl)
+    signingKey = key.key (session)
+    signedInfo = pyccn.SignedInfo (key_digest = signingKey.publicKeyID, key_locator = key.key_locator, 
+                                   freshness = ttl,
+                                   type = pyccn.CONTENT_DATA if rdtype != dns.rdatatype.NDNCERT else pyccn.CONTENT_KEY)
     # , py_timestamp = time.mktime (time.gmtime()))
 
-    msg = dns.message.Message (id=0)
-    msg.answer.append (newrrset)
+    co = pyccn.ContentObject (name = rrset_name, signed_info = signedInfo, content = content)
 
-    co = pyccn.ContentObject (name = rrset_name, signed_info = signedInfo, content = msg.to_wire (origin = zone_origin))
-
-    co.sign (key)
+    co.sign (signingKey)
     return co
 
 def add_rr (session, zone, origin, name, ttl, rdata):

@@ -60,14 +60,18 @@ if( __name__ == '__main__' ):
     if args.show_wire:
         for row in zone.rrsets:
             print ";; DATA packet [%s]" % row.ndndata.name
+            print ";;   signed by [%s]" % row.ndndata.signedInfo.keyLocator.keyName
 
-            rrset = row.dns_msg.answer[0]
-            for rdata in rrset.items:
-                print ("%s %d %s %s   %s" % (rrset.name.relativize (zone_dns), 
-                                             rrset.ttl,
-                                             dns.rdataclass.to_text (rdata.rdclass), 
-                                             dns.rdatatype.to_text (rdata.rdtype), 
-                                             rdata.to_text ()))
+            if row.rtype == dns.rdatatype.NDNCERT:
+                pass
+            else:
+                rrset = row.dns_msg.answer[0]
+                for rdata in rrset.items:
+                    print ("%s %d %s %s   %s" % (rrset.name.relativize (zone_dns), 
+                                                 rrset.ttl,
+                                                 dns.rdataclass.to_text (rdata.rdclass), 
+                                                 dns.rdatatype.to_text (rdata.rdtype), 
+                                                 rdata.to_text ()))
     else:
         for rrset in zone.rrsets:
             for rr in rrset.rrs:

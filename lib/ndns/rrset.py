@@ -49,8 +49,8 @@ class RRSet (Base):
     def dns_msg (self):
         return dns.message.from_wire (self.ndndata.content)
 
-    def refresh_ndndata (self):
-        self._ndndata = ndns.createSignedRRsetData (self).get_ccnb ()
+    def refresh_ndndata (self, session, key):
+        self._ndndata = ndns.createSignedRRsetData (session, self, key).get_ccnb ()
 
 # event.listen (RRSet, 'before_insert', lambda mapper, connection, target: target.refresh_ndndata ())
 
