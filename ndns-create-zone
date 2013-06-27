@@ -60,8 +60,12 @@ if( __name__ == '__main__' ):
         parser.print_help ()
         exit (1)
 
-    mname = args.mname if (args.mname[-1] == '.') else "%s.%s." % (args.mname, zone_dns)
-    rname = args.rname if (args.rname[-1] == '.') else "%s.%s." % (args.rname, zone_dns)
+    if zone_dns != "":
+        mname = args.mname if (args.mname[-1] == '.') else "%s.%s." % (args.mname, zone_dns)
+        rname = args.rname if (args.rname[-1] == '.') else "%s.%s." % (args.rname, zone_dns)
+    else:
+        mname = args.mname if (args.mname[-1] == '.') else "%s." % (args.mname)
+        rname = args.rname if (args.rname[-1] == '.') else "%s." % (args.rname)
 
     zone = _ndns.query (ndns.Zone).filter (ndns.Zone.has_name (zone_ndn)).first ()
     if zone:
@@ -76,19 +80,22 @@ if( __name__ == '__main__' ):
     ##########################
 
     if args.default_ksk:
-        ksk = ndns.Key ()
+        ksk = ndns.Key (key_type = "KSK")
         ksk.load_default_key ()
+        zone.keys.append (ksk)
     else:
-        ksk = ndns.Key (name = 
+        ksk = ndns.Key (key_type = "KSK",
+                        name = 
                         pyccn.Name (zone_ndn[:-1]).
                         append ("DNS").
                         append (zone_ndn[-1]).
                         append ("ksk-%d" % int (time.time ())).
-                        append ("NDNCERT"))
+                        append ("NDNCERT"),
+                        parent_zone = pyccn.Name (zone_ndn[:-1]))
         ksk.generate (_ndns)
         zone.keys.append (ksk)
 
-    zsk = ndns.Key (name = zone_ndn.append ("DNS").append ("zsk-%d" % int (time.time ())).append ("NDNCERT"))
+    zsk = ndns.Key (key_type="ZKS", name = zone_ndn.append ("DNS").append ("zsk-%d" % int (time.time ())).append ("NDNCERT"))
     zsk.generate (_ndns)
     zone.keys.append (zsk)
 
@@ -99,7 +106,7 @@ if( __name__ == '__main__' ):
     rrset.rrs.append (rr)
 
     ndncert = dns.rdtypes.IN.NDNCERT.NDNCERT (dns.rdataclass.IN, dns.rdatatype.NDNCERT,
-                                              zsk.key (_ndns).publicToDER ())
+                                              zsk.public_key (_ndns).publicToDER ())
     rr.rrdata = ndncert
 
     zsk.rrset = rrset

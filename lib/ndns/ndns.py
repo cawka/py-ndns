@@ -77,11 +77,13 @@ def createSignedRRsetData (session, rrset, key):
     rrset_name = pyccn.Name (zone_name)
     rrset_name = rrset_name.append ("DNS")
     if (len (label) > 0):
-        rrset_name = rrset_name.append (label.to_text ())
+        ndn_label = ndnify (label.to_text ())
+        for label in ndn_label:
+            rrset_name = rrset_name.append (label)
     rrset_name = rrset_name.append (dns.rdatatype.to_text (rdtype))
     rrset_name = rrset_name.appendVersion ()
     
-    signingKey = key.key (session)
+    signingKey = key.private_key (session)
     signedInfo = pyccn.SignedInfo (key_digest = signingKey.publicKeyID, key_locator = key.key_locator, 
                                    freshness = ttl,
                                    type = pyccn.CONTENT_DATA if rdtype != dns.rdatatype.NDNCERT else pyccn.CONTENT_KEY)
@@ -115,4 +117,4 @@ def add_rr (session, zone, origin, name, ttl, rdata):
     rrset.rrs.append (rr)  
     rr.rrdata = rdata
 
-    rrset.refresh_ndndata ()
+    rrset.refresh_ndndata (session, zone.default_key)

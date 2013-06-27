@@ -145,11 +145,14 @@ class NdnsDaemon:
 
         if not rrset:
             _LOG.debug ("(!!! no action defined yet!!!) The requested record (%s %s) not found in zone [%s]" %
-                        (label.to_text (), dns.rdatatype.to_text (rrtype), zoneName))
+                        (label.to_text (), dns.rdatatype.to_text (rrtype), zone.name))
             return pyccn.RESULT_OK
 
         dataPacket = rrset.ndndata
         if interest.name[:] != dataPacket.name[:len(interest.name)]:
+            print dataPacket.name[:len(interest.name)]
+            print interest.name[:]
+            
             _LOG.debug ("Request is not in a canonical form (e.g., case mistmatch), requested data found, but cannot be returned")
             _LOG.debug ("        Could be version mistmatch")
             return pyccn.RESULT_OK

@@ -9,6 +9,8 @@
 # Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
 # 
 
+import pyccn
+
 def __clean (name):
     """
     Remove ccnx:/ and any leading or trailing slashes
@@ -35,9 +37,20 @@ def __dns_split (name, ltrim, rtrim):
 
     return components
 
-def dnsify (ndnName, ltrim = 0, rtrim = 0):
+def dnsify (ndnName, ltrim = 0, rtrim = 0, invert = False):
     components = __dns_split (ndnName, ltrim, rtrim)
-    dnsFormattedName = ".".join (components)
+    if not invert:
+        dnsFormattedName = ".".join (components)
+    else:
+        dnsFormattedName = ".".join (reversed (components))
 
     # conversion to utf-8 and then idna will ensure that converted name can be DNSified
     return dnsFormattedName.decode ('utf-8').encode ('idna')
+
+
+def ndnify (dnsName):
+    ndnName = pyccn.Name ()
+    for component in reversed (dnsName.split (".")):
+        ndnName = ndnName.append (str (component))
+
+    return ndnName

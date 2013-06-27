@@ -24,7 +24,7 @@ import dns.message
 class Zone (Base):
     __tablename__ = "zones"
     rrsets = relationship ("RRSet", backref="zone", cascade="all, delete, delete-orphan")
-    keys = relationship ("Key", backref="zone", cascade="all, delete, delete-orphan")
+    keys = relationship ("Key", backref="zone", cascade="all, delete, delete-orphan", order_by="Key.key_type")
     soa = relationship ("RRSet", #viewonly=True, 
                         primaryjoin = "and_(Zone.id==RRSet.zone_id, RRSet.rclass == %d, RRSet.rtype == %d)" % (dns.rdataclass.IN, dns.rdatatype.SOA))
 

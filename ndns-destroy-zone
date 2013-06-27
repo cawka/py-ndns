@@ -49,6 +49,9 @@ if( __name__ == '__main__' ):
         sys.stderr.write ("ERROR: zone [%s] is not configured or already destroyed\n" % zone_ndn)
         exit (1)
 
+    for key in zone.keys:
+        key.erase (_ndns)
+
     _ndns.delete (zone)
     _ndns.commit ()
 

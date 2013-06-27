@@ -63,7 +63,13 @@ if( __name__ == '__main__' ):
             print ";;   signed by [%s]" % row.ndndata.signedInfo.keyLocator.keyName
 
             if row.rtype == dns.rdatatype.NDNCERT:
-                pass
+                rrset = row
+                rr = rrset.rrs[0]
+                print ("%s %d %s %s   %s" % (rrset.dns_label,
+                                             rr.ttl,
+                                             dns.rdataclass.to_text (rrset.rclass), 
+                                             dns.rdatatype.to_text (rrset.rtype), 
+                                             rr.dns_rrdata.to_text ()))
             else:
                 rrset = row.dns_msg.answer[0]
                 for rdata in rrset.items:
