@@ -35,7 +35,12 @@ class IdentityPolicy:
         
             anchor = self.authorize_by_anchor (data_name, key_name)
             if anchor:
-                return dataPacket.verify_signature (anchor)
+                verified = dataPacket.verify_signature (anchor)
+                if verified:
+                    self._LOG.info ("anchor OKs [%s]" % (data_name))
+                else:
+                    self._LOG.info ("anchor FAILs [%s]" % (data_name))
+                return verified
 
             if not self.authorize_by_rule (data_name, key_name):
                 return False
@@ -47,6 +52,8 @@ class IdentityPolicy:
             if not verified:
                 return False
 
+            self._LOG.info ("policy OKs [%s] to be signed with [%s]" % (data_name, key_name))
+
             limit_left -= 1
             dataPacket = keyDataPacket
             # continue
@@ -55,7 +62,7 @@ class IdentityPolicy:
 
 
     def authorize_by_anchor (self, data_name, key_name):
-        self._LOG.debug ("== authorize_by_anchor == data: [%s], key: [%s]" % (data_name, key_name))
+        # self._LOG.debug ("== authorize_by_anchor == data: [%s], key: [%s]" % (data_name, key_name))
 
         if not isinstance (data_name, pyccn.Name):
             data_name = pyccn.Name (data_name)
@@ -72,7 +79,7 @@ class IdentityPolicy:
         return None
 
     def authorize_by_rule (self, data_name, key_name):
-        self._LOG.debug ("== authorize_by_rule == data: [%s], key: [%s]" % (data_name, key_name))
+        # self._LOG.debug ("== authorize_by_rule == data: [%s], key: [%s]" % (data_name, key_name))
 
         if not isinstance (data_name, str):
             data_name = str (data_name)
@@ -83,11 +90,11 @@ class IdentityPolicy:
         for rule in self.rules:
             matches_key = re.match (rule[0], key_name)
             if matches_key:
-                matches_data = re.match (rule[0], key_name)
+                matches_data = re.match (rule[2], data_name)
 
                 if matches_data:
                     namespace_key  = matches_key.expand (rule[1])
-                    namespace_data = matches_data.expand (rule[1])
+                    namespace_data = matches_data.expand (rule[3])
                     if len(namespace_key) == 0:
                         namespace_key = "/"
 
@@ -96,6 +103,8 @@ class IdentityPolicy:
 
                     namespace_key = pyccn.Name (namespace_key)
                     namespace_data = pyccn.Name (namespace_data)
+
+                    self._LOG.debug ("key: [%s], data: [%s]" % (namespace_key, namespace_data))
                     
                     if namespace_key[:] == namespace_data[0:len (namespace_key)]:
                         return True

@@ -72,7 +72,8 @@ Pr3CwyBRloTJJbm5kf+pGuJh4fE9Qk0i/fS9Xs6gFup3oPnr+wFFjJObnRTrUsaM
 8TQokOLYZFsatsZOvwIDAQAB
 -----END PUBLIC KEY-----""")
                 ]],
-    rules = [["^((/[^/]+)*)/DNS((/[^/]+)*)/[^/]+/NDNCERT$", "\\1\\3"]]
+    rules = [["^((/[^/]+)*)/DNS((/[^/]+)*)/[^/]+/NDNCERT$", "\\1\\3", "^((/[^/]+)*)/DNS((/[^/]+)*)$", "\\1\\3"],
+             ["^((/[^/]+)*)/DNS((/[^/]+)*)/[^/]+/NDNCERT$", "\\1\\3", "(.*)", "\\1"]]
     )
 
 ######################################################################
@@ -199,7 +200,7 @@ if( __name__ == '__main__' ):
     }
 
     with context:
-        discovery = pyccn.LocalPrefixDiscovery (periodicity = 5)
+        discovery = pyccn.LocalPrefixDiscovery (periodicity = 300)
         discovery.subscribe ("ndns", ndns_daemon.updateLocalPrefix)
 
         ndns_daemon.run ()

@@ -1,0 +1,141 @@
+#!/usr/bin/env python
+# -*- Mode:python; c-file-style:"gnu"; indent-tabs-mode:nil -*- */
+#
+# Copyright (c) 2013, Regents of the University of California
+#                     Alexander Afanasyev
+#
+# BSD license, See the doc/LICENSE file for more information
+#
+# Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
+#
+
+# make sure modules from lib/ are loaded
+import sys
+_WORKDIR = sys.path[0]
+sys.path = ["%s/lib" % _WORKDIR] + sys.path
+
+import argparse
+import os, functools, signal, daemon
+
+#install from contrib/
+import setproctitle
+import pyccn
+import dns.rdataclass, dns.rdatatype, dns.rdata, dns.rrset, dns.zone
+
+# part of lib/
+import ndns
+from ndns.policy.identity import *
+import base64
+
+######################################################################
+######################################################################
+######################################################################
+
+parser = argparse.ArgumentParser(description='NDNS client tool')
+parser.add_argument('--dns', dest='dns', action='store_true', default=False,
+                    help='''Expect DNS name, otherwise NDN name is expected as input''')
+parser.add_argument('-d', dest='debug', action='store_true', default=False,
+                    help='''Include debug information in log output''')
+parser.add_argument('-v', dest='verbose', action='store_true', default=False,
+                    help='''Include verbose information in log output''')
+
+parser.add_argument('zone', metavar='zone', type=str,
+                    help='''Zone to query (will not be needed later)''')
+
+parser.add_argument('name', metavar='name', type=str,
+                    help='''Name to query for''')
+
+parser.add_argument('rrtype', metavar='rrtype', type=str, nargs='?', default='FH',
+                    help='''Resource record to query''')
+args = parser.parse_args()
+
+_LOG = logging.getLogger ("ndns")
+_LOG.setLevel (logging.DEBUG if (args.debug) else logging.WARN)
+if args.verbose:
+    _LOG.setLevel (logging.INFO)
+
+_handler = logging.StreamHandler (sys.stderr)
+_handler.setLevel (logging.DEBUG if (args.debug) else logging.WARN)
+if args.verbose:
+    _handler.setLevel (logging.INFO)
+_handler.setFormatter (logging.Formatter('%(asctime)s %(name)s [%(levelname)s]  %(message)s', '%H:%M:%S'))
+_LOG.addHandler (_handler)
+
+TrustPolicy = IdentityPolicy (
+    anchors = [[pyccn.Name ("/ndn/keys/ucla.edu/alex/%C1.M.K%00F%8D%E9%C3%EE4%7F%C1Mjqro%C6L%8DGV%91%90%03%24%ECt%95n%F3%9E%A6i%F1%C9"), 
+                pyccn.Name ("/"),
+                pyccn.Key.createFromPEM (public = """-----BEGIN PUBLIC KEY-----
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDSPdPM7+DjDcUGHtwEDmkq4kO5
+tEUI05w5gR4JC1UiZxS0ckMWSLRPWXozHrpJsjNzDeI6OiQrXzup1tF2IN+Xtdr+
+Pr3CwyBRloTJJbm5kf+pGuJh4fE9Qk0i/fS9Xs6gFup3oPnr+wFFjJObnRTrUsaM
+8TQokOLYZFsatsZOvwIDAQAB
+-----END PUBLIC KEY-----""")
+                ]],
+    rules = [["^((/[^/]+)*)/DNS((/[^/]+)*)/[^/]+/NDNCERT$", "\\1\\3", "^((/[^/]+)*)/DNS((/[^/]+)*)$", "\\1\\3"],
+             ["^((/[^/]+)*)/DNS((/[^/]+)*)/[^/]+/NDNCERT$", "\\1\\3", "(.*)", "\\1"]]
+    )
+
+######################################################################
+######################################################################
+######################################################################
+
+# main
+if( __name__ == '__main__' ):
+    zone = pyccn.Name (args.zone)
+
+    if args.dns:
+        args.name = ndns.ndnify (args.name)
+    name = pyccn.Name (args.name)
+
+    try:
+        rrtype = dns.rdatatype.to_text (dns.rdatatype.from_text (args.rrtype))
+    except dns.rdatatype.UnknownRdatatype:
+        sys.stderr.write ("Requested an unrecognized RR type [%s] to query\n" % args.rrtype)
+        exit (1)
+
+    ndn = pyccn.CCN ()
+    ndn.defer_verification ()
+
+    query = pyccn.Name (zone).append ("DNS")
+    if len(name) > 0:
+        for comp in name[0:len(name)]:
+            query = query.append (comp)
+    query = query.append (rrtype)
+    result = ndn.get (query)
+
+    if not result:
+        print ";; Got no answer"
+        exit (1)
+    
+    if not TrustPolicy.verify (result):
+        print ";; Got answer, but result is not trusted"
+        exit (2)
+
+    print ";; Got data packet [%s]" % result.name
+    print ";;       signed by [%s]" % result.signedInfo.keyLocator.keyName
+    print ""
+    if rrtype == "NDNCERT":
+        # special handling
+        print ";; ANSWER"
+        print "%s %d IN NDNCERT %s" % (ndns.dnsify (str (name)), result.signedInfo.freshnessSeconds, base64.b64encode (result.content))
+    else:
+        msg = dns.message.from_wire (result.content)
+        print msg.to_text ()
+
+    # # doint the iterative query
+    # for i in xrange (0, len(name)+1):
+    #     query = pyccn.Name (name[0:i]).append ("DNS")
+        
+    #     if i < len(name):
+    #         query = query.append (name[i])
+
+    #     if i == len(name): 
+    #         # now can query actual thing
+    #         query = query.append (rrtype)
+    #     else:
+    #         query = query.append ("NS")
+
+            
+    #     print query
+
+    

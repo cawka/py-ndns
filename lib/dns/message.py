@@ -188,38 +188,39 @@ class Message(object):
         """
 
         s = cStringIO.StringIO()
-        print >> s, 'id %d' % self.id
-        print >> s, 'opcode %s' % \
-              dns.opcode.to_text(dns.opcode.from_flags(self.flags))
+        s.write (';; ->>HEADER<<- ')
+        s.write ('opcode %s, ' % \
+                     dns.opcode.to_text(dns.opcode.from_flags(self.flags)))
         rc = dns.rcode.from_flags(self.flags, self.ednsflags)
-        print >> s, 'rcode %s' % dns.rcode.to_text(rc)
-        print >> s, 'flags %s' % dns.flags.to_text(self.flags)
+        s.write ('rcode %s, ' % dns.rcode.to_text(rc))
+        s.write ('id %d\n' % self.id)
+        s.write (';; flags: %s\n' % dns.flags.to_text(self.flags))
         if self.edns >= 0:
-            print >> s, 'edns %s' % self.edns
+            s.write (';; OPT PSEUDOSECTION:\n')
+            s.write ('; EDNS: version: %s' % self.edns)
             if self.ednsflags != 0:
-                print >> s, 'eflags %s' % \
-                      dns.flags.edns_to_text(self.ednsflags)
-            print >> s, 'payload', self.payload
+                s.write (", eflags: %s;" % dns.flags.edns_to_text(self.ednsflags))
+            s.write (', payload: %s\n' % self.payload)
         is_update = dns.opcode.is_update(self.flags)
         if is_update:
-            print >> s, ';ZONE'
+            print >> s, '\n;; ZONE'
         else:
-            print >> s, ';QUESTION'
+            print >> s, '\n;; QUESTION'
         for rrset in self.question:
             print >> s, rrset.to_text(origin, relativize, **kw)
         if is_update:
-            print >> s, ';PREREQ'
+            print >> s, '\n;; PREREQ'
         else:
-            print >> s, ';ANSWER'
+            print >> s, '\n;; ANSWER'
         for rrset in self.answer:
             print >> s, rrset.to_text(origin, relativize, **kw)
         if is_update:
-            print >> s, ';UPDATE'
+            print >> s, '\n;; UPDATE'
         else:
-            print >> s, ';AUTHORITY'
+            print >> s, '\n;; AUTHORITY'
         for rrset in self.authority:
             print >> s, rrset.to_text(origin, relativize, **kw)
-        print >> s, ';ADDITIONAL'
+        print >> s, '\n;; ADDITIONAL'
         for rrset in self.additional:
             print >> s, rrset.to_text(origin, relativize, **kw)
         #
