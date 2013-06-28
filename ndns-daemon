@@ -24,6 +24,7 @@ import dns.rdataclass, dns.rdatatype, dns.rdata, dns.rrset, dns.zone
 
 # part of lib/
 import ndns
+from ndns.policy.identity import *
 
 ######################################################################
 ######################################################################
@@ -40,7 +41,7 @@ parser.add_argument('-l', dest='logfile', type=str,
                     help='''Write logging to the specified logfile''')
 args = parser.parse_args()
 
-_LOG = logging.getLogger ("ndns.Daemon")
+_LOG = logging.getLogger ("ndns")
 _LOG.setLevel (logging.DEBUG if (args.debug) else logging.WARN)
 
 if args.foreground and not args.quiet:
@@ -57,6 +58,22 @@ if args.logfile:
 
 if ((args.quiet or not args.foreground) and not args.logfile):
     _LOG.addHandler (logging.NullHandler ())
+
+_LOG = logging.getLogger ("ndns.Daemon")
+
+
+TrustPolicy = IdentityPolicy (
+    anchors = [[pyccn.Name ("/ndn/keys/ucla.edu/alex/%C1.M.K%00F%8D%E9%C3%EE4%7F%C1Mjqro%C6L%8DGV%91%90%03%24%ECt%95n%F3%9E%A6i%F1%C9"), 
+                pyccn.Name ("/"),
+                pyccn.Key.createFromPEM (public = """-----BEGIN PUBLIC KEY-----
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDSPdPM7+DjDcUGHtwEDmkq4kO5
+tEUI05w5gR4JC1UiZxS0ckMWSLRPWXozHrpJsjNzDeI6OiQrXzup1tF2IN+Xtdr+
+Pr3CwyBRloTJJbm5kf+pGuJh4fE9Qk0i/fS9Xs6gFup3oPnr+wFFjJObnRTrUsaM
+8TQokOLYZFsatsZOvwIDAQAB
+-----END PUBLIC KEY-----""")
+                ]],
+    rules = [["^((/[^/]+)*)/DNS((/[^/]+)*)/[^/]+/NDNCERT$", "\\1\\3"]]
+    )
 
 ######################################################################
 ######################################################################
