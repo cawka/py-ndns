@@ -20,12 +20,27 @@ from rrset import *
 from rr import *
 from key import *
 from dnsifier import *
+from policy.identity import *
 
 import dns.rdataclass
 import dns.rdatatype
 import dns.rdata
 import dns.rrset
 import dns.zone
+
+TrustPolicy = IdentityPolicy (
+    anchors = [[pyccn.Name ("/ndn/keys/ucla.edu/alex/%C1.M.K%00F%8D%E9%C3%EE4%7F%C1Mjqro%C6L%8DGV%91%90%03%24%ECt%95n%F3%9E%A6i%F1%C9"), 
+                pyccn.Name ("/"),
+                pyccn.Key.createFromPEM (public = """-----BEGIN PUBLIC KEY-----
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDSPdPM7+DjDcUGHtwEDmkq4kO5
+tEUI05w5gR4JC1UiZxS0ckMWSLRPWXozHrpJsjNzDeI6OiQrXzup1tF2IN+Xtdr+
+Pr3CwyBRloTJJbm5kf+pGuJh4fE9Qk0i/fS9Xs6gFup3oPnr+wFFjJObnRTrUsaM
+8TQokOLYZFsatsZOvwIDAQAB
+-----END PUBLIC KEY-----""")
+                ]],
+    rules = [["^((/[^/]+)*)/DNS((/[^/]+)*)/[^/]+/NDNCERT$", "\\1\\3", "^((/[^/]+)*)/DNS((/[^/]+)*)$", "\\1\\3"],
+             ["^((/[^/]+)*)/DNS((/[^/]+)*)/[^/]+/NDNCERT$", "\\1\\3", "(.*)", "\\1"]]
+    )
 
 def ndns_session (config = "etc/ndns.conf"):
     conf = iscpy.ParseISCString (open (config).read ())

@@ -11,6 +11,7 @@
 
 from dnsifier import *
 from ndns import *
+from query import *
 
 from zone import *
 from rrset import *

@@ -38,6 +38,9 @@ def __dns_split (name, ltrim, rtrim):
     return components
 
 def dnsify (ndnName, ltrim = 0, rtrim = 0, invert = False):
+    if ndnName == "":
+        return "."
+
     components = __dns_split (ndnName, ltrim, rtrim)
     if not invert:
         dnsFormattedName = ".".join (components)

@@ -14,8 +14,7 @@ import sys
 _WORKDIR = sys.path[0]
 sys.path = ["%s/lib" % _WORKDIR] + sys.path
 
-import argparse
-import os, functools, signal, daemon
+import argparse, logging
 
 #install from contrib/
 import setproctitle
@@ -24,7 +23,6 @@ import dns.rdataclass, dns.rdatatype, dns.rdata, dns.rrset, dns.zone
 
 # part of lib/
 import ndns
-from ndns.policy.identity import *
 import base64
 
 ######################################################################
@@ -39,10 +37,16 @@ parser.add_argument('-d', dest='debug', action='store_true', default=False,
 parser.add_argument('-v', dest='verbose', action='store_true', default=False,
                     help='''Include verbose information in log output''')
 
+parser.add_argument('-q', dest='quiet', action='store_true', default=False,
+                    help='''Output only RR data''')
+
+parser.add_argument('--raw', dest='raw', action='store_true', default=False,
+                    help='''zone includes full NDN name of the DNS record to be queried''')
+
 parser.add_argument('zone', metavar='zone', type=str,
                     help='''Zone to query (will not be needed later)''')
 
-parser.add_argument('name', metavar='name', type=str,
+parser.add_argument('name', metavar='name', type=str, nargs='?',
                     help='''Name to query for''')
 
 parser.add_argument('rrtype', metavar='rrtype', type=str, nargs='?', default='FH',
@@ -61,20 +65,6 @@ if args.verbose:
 _handler.setFormatter (logging.Formatter('%(asctime)s %(name)s [%(levelname)s]  %(message)s', '%H:%M:%S'))
 _LOG.addHandler (_handler)
 
-TrustPolicy = IdentityPolicy (
-    anchors = [[pyccn.Name ("/ndn/keys/ucla.edu/alex/%C1.M.K%00F%8D%E9%C3%EE4%7F%C1Mjqro%C6L%8DGV%91%90%03%24%ECt%95n%F3%9E%A6i%F1%C9"), 
-                pyccn.Name ("/"),
-                pyccn.Key.createFromPEM (public = """-----BEGIN PUBLIC KEY-----
-MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDSPdPM7+DjDcUGHtwEDmkq4kO5
-tEUI05w5gR4JC1UiZxS0ckMWSLRPWXozHrpJsjNzDeI6OiQrXzup1tF2IN+Xtdr+
-Pr3CwyBRloTJJbm5kf+pGuJh4fE9Qk0i/fS9Xs6gFup3oPnr+wFFjJObnRTrUsaM
-8TQokOLYZFsatsZOvwIDAQAB
------END PUBLIC KEY-----""")
-                ]],
-    rules = [["^((/[^/]+)*)/DNS((/[^/]+)*)/[^/]+/NDNCERT$", "\\1\\3", "^((/[^/]+)*)/DNS((/[^/]+)*)$", "\\1\\3"],
-             ["^((/[^/]+)*)/DNS((/[^/]+)*)/[^/]+/NDNCERT$", "\\1\\3", "(.*)", "\\1"]]
-    )
-
 ######################################################################
 ######################################################################
 ######################################################################
@@ -88,39 +78,29 @@ if( __name__ == '__main__' ):
     name = pyccn.Name (args.name)
 
     try:
-        rrtype = dns.rdatatype.to_text (dns.rdatatype.from_text (args.rrtype))
+        if not args.raw:
+            result, msg = ndns.SimpleQuery.get (zone, "", name, args.rrtype)
+        else:
+            result, msg = ndns.SimpleQuery.get_raw (zone)
+            
     except dns.rdatatype.UnknownRdatatype:
         sys.stderr.write ("Requested an unrecognized RR type [%s] to query\n" % args.rrtype)
         exit (1)
-
-    ndn = pyccn.CCN ()
-    ndn.defer_verification ()
-
-    query = pyccn.Name (zone).append ("DNS")
-    if len(name) > 0:
-        for comp in name[0:len(name)]:
-            query = query.append (comp)
-    query = query.append (rrtype)
-    result = ndn.get (query)
-
-    if not result:
+    except ndns.QueryNoAnswer:
         print ";; Got no answer"
-        exit (1)
-    
-    if not TrustPolicy.verify (result):
-        print ";; Got answer, but result is not trusted"
         exit (2)
+    except ndns.QueryAnswerNotTrusted:
+        print ";; Got answer, but result is not trusted"
+        exit (3)
 
-    print ";; Got data packet [%s]" % result.name
-    print ";;       signed by [%s]" % result.signedInfo.keyLocator.keyName
-    print ""
-    if rrtype == "NDNCERT":
-        # special handling
-        print ";; ANSWER"
-        print "%s %d IN NDNCERT %s" % (ndns.dnsify (str (name)), result.signedInfo.freshnessSeconds, base64.b64encode (result.content))
-    else:
-        msg = dns.message.from_wire (result.content)
+    if not args.quiet:
+        print ";; Got data packet [%s]" % result.name
+        print ";;       signed by [%s]" % result.signedInfo.keyLocator.keyName
+        print ""
         print msg.to_text ()
+    else:
+        for rrset in msg.answer:
+            print rrset.to_text ()
 
     # # doint the iterative query
     # for i in xrange (0, len(name)+1):
