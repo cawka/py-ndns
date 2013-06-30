@@ -12,7 +12,7 @@
 # make sure modules from lib/ are loaded
 import sys; sys.path = ["%s/lib" % sys.path[0]] + sys.path
 
-import sqlite3, iscpy, argparse, time
+import sqlite3, iscpy, argparse, time, os
 import dns.rdataclass
 import dns.rdatatype
 import dns.rdata
@@ -84,19 +84,19 @@ if( __name__ == '__main__' ):
         ksk.load_default_key ()
         zone.keys.append (ksk)
     else:
+        ksk_name = pyccn.Name (zone_ndn[:-1]).append ("DNS")
+        for component in ndns.ndnify (zone_ndn[-1]):
+            ksk_name = ksk_name.append (component)
+        ksk_name = ksk_name.append ("ksk-%d" % int (time.time ())).append ("NDNCERT")
+
         ksk = ndns.Key (key_type = "KSK",
-                        name = 
-                        pyccn.Name (zone_ndn[:-1]).
-                        append ("DNS").
-                        append (zone_ndn[-1]).
-                        append ("ksk-%d" % int (time.time ())).
-                        append ("NDNCERT"),
+                        name = ksk_name,
                         parent_zone = pyccn.Name (zone_ndn[:-1]))
-        ksk.generate (_ndns)
+        ksk.generate (_ndns.keydir)
         zone.keys.append (ksk)
 
     zsk = ndns.Key (key_type="ZKS", name = zone_ndn.append ("DNS").append ("zsk-%d" % int (time.time ())).append ("NDNCERT"))
-    zsk.generate (_ndns)
+    zsk.generate (_ndns.keydir)
     zone.keys.append (zsk)
 
     rrset = ndns.RRSet (label = zsk.label, rclass = dns.rdataclass.IN, rtype = dns.rdatatype.NDNCERT)
@@ -106,7 +106,7 @@ if( __name__ == '__main__' ):
     rrset.rrs.append (rr)
 
     ndncert = dns.rdtypes.IN.NDNCERT.NDNCERT (dns.rdataclass.IN, dns.rdatatype.NDNCERT,
-                                              zsk.public_key (_ndns).publicToDER ())
+                                              zsk.public_key (_ndns.keydir).publicToDER ())
     rr.rrdata = ndncert
 
     zsk.rrset = rrset
@@ -139,3 +139,6 @@ if( __name__ == '__main__' ):
 
     _ndns.add (zone)
     _ndns.commit ()
+
+    # reload daemon config, if necessary
+    os.system ("killall -USR1 ndns-daemon")

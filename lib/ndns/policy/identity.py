@@ -32,12 +32,14 @@ class IdentityPolicy:
         while (limit_left > 0):
             data_name = dataPacket.name
             key_name = dataPacket.signedInfo.keyLocator.keyName
-        
+
+            self._LOG.debug ("data [%s] signed by [%s]" % (data_name, key_name))
+
             anchor = self.authorize_by_anchor (data_name, key_name)
             if anchor:
                 verified = dataPacket.verify_signature (anchor)
                 if verified:
-                    self._LOG.info ("anchor OKs [%s]" % (data_name))
+                    self._LOG.info ("anchor OKs [%s] (**[%s]**)" % (data_name, key_name))
                 else:
                     self._LOG.info ("anchor FAILs [%s]" % (data_name))
                 return verified
@@ -46,6 +48,9 @@ class IdentityPolicy:
                 return False
 
             keyDataPacket = self._ndn.get (key_name, timeoutms = 3000)
+            if not keyDataPacket:
+                return False
+
             key = pyccn.Key.createFromDER (public = keyDataPacket.content)
             verified = dataPacket.verify_signature (key)
                 
@@ -104,7 +109,7 @@ class IdentityPolicy:
                     namespace_key = pyccn.Name (namespace_key)
                     namespace_data = pyccn.Name (namespace_data)
 
-                    self._LOG.debug ("key: [%s], data: [%s]" % (namespace_key, namespace_data))
+                    self._LOG.debug ("  >> rule: key [%s], data [%s]" % (namespace_key, namespace_data))
                     
                     if namespace_key[:] == namespace_data[0:len (namespace_key)]:
                         return True

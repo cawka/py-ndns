@@ -39,12 +39,14 @@ Pr3CwyBRloTJJbm5kf+pGuJh4fE9Qk0i/fS9Xs6gFup3oPnr+wFFjJObnRTrUsaM
 -----END PUBLIC KEY-----""")
                 ]],
     rules = [["^((/[^/]+)*)/DNS((/[^/]+)*)/[^/]+/NDNCERT$", "\\1\\3", "^((/[^/]+)*)/DNS((/[^/]+)*)$", "\\1\\3"],
+             ["^((/[^/]+)*)/DNS((/[^/]+)*)/[^/]+/NDNCERT$", "\\1\\3", "^((/[^/]+)*)/([^/\.]+)\.([^/\.]+)/DNS((/[^/]+)*)$", "\\1/\\4/\\3\\5"],
              ["^((/[^/]+)*)/DNS((/[^/]+)*)/[^/]+/NDNCERT$", "\\1\\3", "(.*)", "\\1"]]
     )
 
 def ndns_session (config = "etc/ndns.conf"):
     conf = iscpy.ParseISCString (open (config).read ())
     zonedb = conf['options']['zonedb'].strip ("\"'")
+    keydir = conf['options']['keydir'].strip ("\"'")
     db = create_engine ('sqlite:///%s' % zonedb)
     # db.echo = True
     
@@ -52,7 +54,7 @@ def ndns_session (config = "etc/ndns.conf"):
     
     sm = sessionmaker (bind = db)
     session = sm ()
-    session.conf = conf
+    session.keydir = keydir
     return session
 
 def createSignedRRsetData (session, rrset, key):
@@ -60,8 +62,6 @@ def createSignedRRsetData (session, rrset, key):
 
     rdclass = rrset.rclass
     rdtype = rrset.rtype
-
-    # soa = rrset.zone.soa[0]
 
     zone_name = rrset.zone.name
     zone_origin = dns.name.from_text (dnsify (str (zone_name)))
@@ -86,8 +86,10 @@ def createSignedRRsetData (session, rrset, key):
         content = msg.to_wire (origin = zone_origin)
     
     if ttl <= -1:
-        ttl = 3600
-        # ttl = soa.rrs[0].ttl
+        if rrset.zone and rrset.zone.soa and rrset.zone.soa[0]:
+            ttl = rrset.zone.soa[0].rrs[0].ttl
+        else:
+            ttl = 3600
     
     rrset_name = pyccn.Name (zone_name)
     rrset_name = rrset_name.append ("DNS")
@@ -98,7 +100,7 @@ def createSignedRRsetData (session, rrset, key):
     rrset_name = rrset_name.append (dns.rdatatype.to_text (rdtype))
     rrset_name = rrset_name.appendVersion ()
     
-    signingKey = key.private_key (session)
+    signingKey = key.private_key (session.keydir)
     signedInfo = pyccn.SignedInfo (key_digest = signingKey.publicKeyID, key_locator = key.key_locator, 
                                    freshness = ttl,
                                    type = pyccn.CONTENT_DATA if rdtype != dns.rdatatype.NDNCERT else pyccn.CONTENT_KEY)

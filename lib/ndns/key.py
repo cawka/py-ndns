@@ -30,7 +30,8 @@ class Key (Base):
     _name = Column ("name", Binary, index=True, unique=True)
     _parent_zone = Column ("parent_zone", Binary) # only makes sense for KSKs
 
-    key_type = Column (Enum ("KSK", "ZKS"), nullable=False, default="ZSK")
+    key_type = Column (Enum ("KSK", "ZKS", "DZSK"), nullable=False, default="ZSK")
+    # DZSK: dynamic-zone signing key
 
     rrset_id = Column (Integer)
     rrset = relationship ("RRSet", 
@@ -90,21 +91,27 @@ class Key (Base):
     def parent_zone (self, value):
         self._parent_zone = buffer (value.get_ccnb ())
 
-    def generate (self, session):
+    def generate (self, keydir, password = None):
         '''Generate key pair on disk'''
 
         self._key = pyccn.Key ()
         self._key.generateRSA (2048 if self.key_type == "KSK" else 1024)
 
-        keydir = session.conf['options']['keydir'].strip ("\"'")
         if not os.path.exists (keydir):
             os.makedirs (keydir)
 
-        self._key.publicToPEM ("%s/%s.pub" % (keydir, self.local_key_id))
-        self._key.privateToPEM ("%s/%s.pri" % (keydir, self.local_key_id))
+        local_key_id = self.local_key_id
 
-    def erase (self, session):
-        keydir = session.conf['options']['keydir'].strip ("\"'")
+        if os.path.exists ("%s/%s.pub" % (keydir, local_key_id)):
+            raise KeyException ("Key already exists (%s/%s.pub), to re-generate the key, delete it manually" % (keydir, local_key_id))
+
+        if os.path.exists ("%s/%s.pri" % (keydir, local_key_id)):
+            raise KeyException ("Key already exists (%s/%s.pri), to re-generate the key, delete it manually" % (keydir, local_key_id))
+
+        self._key.publicToPEM ("%s/%s.pub" % (keydir, local_key_id))
+        self._key.privateToPEM ("%s/%s.pri" % (keydir, local_key_id), password = password)
+
+    def erase (self, keydir):
         if not os.path.exists (keydir):
             return
 
@@ -126,17 +133,15 @@ class Key (Base):
     def key_locator (self):
         return pyccn.KeyLocator (self.name)
 
-    def private_key (self, session):
+    def private_key (self, keydir, password = None):
         if not self._key:
-            keydir = session.conf['options']['keydir'].strip ("\"'")
             self._key = pyccn.Key ()
-            self._key.fromPEM ("%s/%s.pri" % (keydir, self.local_key_id))
+            self._key.fromPEM ("%s/%s.pri" % (keydir, self.local_key_id), password = password)
 
         return self._key
 
-    def public_key (self, session):
+    def public_key (self, keydir):
         if not self._key:
-            keydir = session.conf['options']['keydir'].strip ("\"'")
             key = pyccn.Key ()
             key.fromPEM ("%s/%s.pub" % (keydir, self.local_key_id))
             return key

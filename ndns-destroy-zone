@@ -12,7 +12,7 @@
 # make sure modules from lib/ are loaded
 import sys; sys.path = ["%s/lib" % sys.path[0]] + sys.path
 
-import argparse, pyccn, ndns
+import argparse, pyccn, ndns, os
 
 ######################################################################
 ######################################################################
@@ -50,9 +50,12 @@ if( __name__ == '__main__' ):
         exit (1)
 
     for key in zone.keys:
-        key.erase (_ndns)
+        key.erase (_ndns.keydir)
 
     _ndns.delete (zone)
     _ndns.commit ()
 
     sys.stdout.write ("Zone [%s] and all its records has been deleted\n" % zone_ndn)
+
+    # reload daemon config, if necessary
+    os.system ("killall -USR1 ndns-daemon")

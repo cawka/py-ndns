@@ -53,9 +53,9 @@ class SimpleQuery:
             
         if parse_dns:
             if not rrtype:
-                rdtype = query[-1] if query[-1][0] != '\xFD' else query[-2]
+                rrtype = query[-1] if query[-1][0] != '\xFD' else query[-2]
 
-            if rdtype == "NDNCERT":
+            if rrtype == "NDNCERT":
                 if not zone or not label:
                     matches = re.match ("^((/[^/]+)*)/DNS((/[^/]+)*)/NDNCERT", str(query))
                     if not matches:

@@ -74,7 +74,7 @@ if( __name__ == '__main__' ):
                 sys.stdout.write (";; the following record should be in [%s] zone\n" % key.parent_zone)
 
                 ndncert = dns.rdtypes.IN.NDNCERT.NDNCERT (dns.rdataclass.IN, dns.rdatatype.NDNCERT,
-                                                          key.public_key (_ndns).publicToDER ())
+                                                          key.public_key (_ndns.keydir).publicToDER ())
 
                 sys.stdout.write ("%s %s %s   %s\n" % (key.parent_label,
                                                        dns.rdataclass.to_text (ndncert.rdclass), 

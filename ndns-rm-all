@@ -68,8 +68,7 @@ if( __name__ == '__main__' ):
     if args.force:
         count = 0
         for rrset in query:
-            print rrset.dns_msg.to_text ()
-            # _ndns.delete (rrset)
+            _ndns.delete (rrset)
             count = count + 1
 
         _ndns.commit ()

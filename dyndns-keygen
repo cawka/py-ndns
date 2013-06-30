@@ -1,0 +1,135 @@
+#!/usr/bin/env python
+# -*- Mode:python; c-file-style:"gnu"; indent-tabs-mode:nil -*- */
+# 
+# Copyright (c) 2013, Regents of the University of California
+#                     Alexander Afanasyev
+# 
+# BSD license, See the doc/LICENSE file for more information
+# 
+# Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
+# 
+
+# make sure modules from lib/ are loaded
+import sys; sys.path = ["%s/lib" % sys.path[0]] + sys.path
+
+import argparse, getpass, time, os
+from ndns import dyndns
+import ndns.dnsifier
+import dns.rdtypes.IN.NDNCERT
+import dns.rdataclass, dns.rdatatype
+import pyccn
+
+######################################################################
+######################################################################
+######################################################################
+
+parser = argparse.ArgumentParser (description='Generate key pair for dynamic NDNS')
+
+parser.add_argument ('zone', metavar='zone', type=str,
+                     help='''NDN name of the authoritative zone''')
+parser.add_argument ('domain', metavar='domain', type=str, nargs='?',
+                     help='''Subdomain of the zone that will be managed by the generated key''')
+
+parser.add_argument ('-f', dest='path', type=str,
+                     help='''Folder where to save the key ($HOME/.dyndns/)''')
+parser.add_argument ('-i', dest='key_id', type=str,
+                     help='''Key identifier (dzsk-<timestamp>)''')
+parser.add_argument ('--force', dest='force', action='store_true', default=False,
+                     help='''Force overwriting''')
+
+args = parser.parse_args()
+
+if (not args.zone):
+    parser.print_help ()
+    exit (1)
+
+######################################################################
+######################################################################
+######################################################################
+
+if( __name__ == '__main__' ):
+    try:
+        zone_ndn = pyccn.Name (args.zone)
+        zone_dns = ndns.dnsify (args.zone)
+    except NameError as e:
+        sys.stderr.write ("ERROR: %s\n\n" % e)
+        parser.print_help ()
+        exit (1)
+
+    print "Generating public/private rsa key pair."
+    try:
+        if args.path:
+            path = args.path
+        else:
+            path = "%s/.dyndns" % os.getenv ("HOME")
+            user_path = raw_input ("Enter folder where to save the generated key pair (%s): " % path)
+            if user_path != "":
+                path = user_path
+        
+        if args.key_id:
+            key_id = args.key_id
+        else:
+            key_id = "%d" % int (time.time ())
+            user_key_id = raw_input ("Enter key identifier (%s): " % key_id)
+            if user_key_id != "":
+                key_id = user_key_id
+        key_id = "dzsk-%s" % key_id
+        
+        pprompt = lambda: (getpass.getpass ("Enter passphrase (empty for no passphrase): "), getpass.getpass ('Enter same passphrase again: '))
+        
+        passphrase, passphrase2 = pprompt ()
+        while passphrase != passphrase2:
+            print ('Passphrases do not match.  Try again.')
+            passphrase, passphrase2 = pprompt ()
+
+        if passphrase == "":
+            print ('Note that private key will be stored in unencrypted form')
+            passphrase = None
+    except:
+        print ""
+        exit (1)
+    
+    key_name = pyccn.Name (zone_ndn[:]).append ("DNS")
+    if args.domain:
+        domain_ndn = pyccn.Name (ndns.ndnify (args.domain))
+        for component in domain_ndn:
+            key_name = key_name.append (component)
+    key_name = key_name.append (key_id).append ("NDNCERT")
+    
+    _dyndns = dyndns.session (path)
+    zone = _dyndns.query (dyndns.Zone).filter (dyndns.Zone.has_name (zone_ndn)).first ()
+    if not zone:
+        zone = ndns.Zone (name = zone_ndn)
+        _dyndns.add (zone)
+    else:
+        key = _dyndns.query (dyndns.Key).with_parent (zone).filter (dyndns.Key.key_type == "DZSK", dyndns.Key.has_name (key_name)).first ()
+        if key:
+            if not args.force:
+                sys.stderr.write ("ERROR: Key with the same ID already exists. Specify --force to overwrite\n")
+                exit (1)
+            else:
+                key.erase (path)
+                _dyndns.delete (key)
+                _dyndns.commit ()
+    
+    key = ndns.Key (key_type = "DZSK", name = key_name, zone = zone)
+    zone.default_key = key
+
+    try:
+        key.generate (keydir = path, password = passphrase)
+    except ndns.KeyException, e:
+        print ("ERROR: %s" % e)
+        exit (1)
+        
+    print ("\nKey pair generated")
+    print ("  - private key: [%s/%s.pri]%s" % (path, key.local_key_id, " *encrypted* " if passphrase else " *** not encrypted ***"))
+    print ("  - public key:  [%s/%s.pub]" % (path, key.local_key_id))
+
+    sys.stdout.write ("\nThe following record should be installed into [%s] zone\n\n" % key.zone.name)
+
+    ndncert = dns.rdtypes.IN.NDNCERT.NDNCERT (dns.rdataclass.IN, dns.rdatatype.NDNCERT,
+                                              key.public_key (path).publicToDER ())
+
+    sys.stdout.write ("%s IN NDNCERT   %s\n\n" % (key.label, ndncert.to_text ()))
+
+    _dyndns.commit ()
