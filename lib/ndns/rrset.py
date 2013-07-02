@@ -41,6 +41,10 @@ class RRSet (Base):
     def ndndata (self):   
         return pyccn.ContentObject.from_ccnb (self._ndndata)
 
+    @ndndata.setter
+    def ndndata (self, value):
+        self._ndndata = value.get_ccnb ()
+
     @property
     def dns_label (self):
         return dns.name.from_text (self.label).relativize (dns.name.root)

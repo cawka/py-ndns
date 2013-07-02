@@ -1,0 +1,119 @@
+#!/usr/bin/env python
+# -*- Mode:python; c-file-style:"gnu"; indent-tabs-mode:nil -*- */
+# 
+# Copyright (c) 2013, Regents of the University of California
+#                     Alexander Afanasyev
+# 
+# BSD license, See the doc/LICENSE file for more information
+# 
+# Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
+# 
+
+# make sure modules from lib/ are loaded
+import sys; sys.path = ["%s/lib" % sys.path[0]] + sys.path
+
+import argparse
+from ndns import dyndns
+import ndns.query
+
+import dns.rdtypes.IN.NDNCERT
+import dns.rdataclass, dns.rdatatype
+import dns.zone
+import os, glob, re
+import pyccn
+
+######################################################################
+######################################################################
+######################################################################
+
+parser = argparse.ArgumentParser(description='Add records using Dynamic NDNS query')
+parser.add_argument ('-f', dest='path', type=str,
+                     help='''Folder where keys are stored ($HOME/.dyndns/)''')
+parser.add_argument ('-k', dest='key', type=str,
+                     help='''Key name to be used to send a dynamic update.  If not specified, a default key is used''')
+parser.add_argument('zone', metavar='zone', type=str,
+                    help='''NDN name of the zone''')
+parser.add_argument('rr', metavar='rr', type=str, nargs='?', default="",
+                    help='''Specification of RR to add. This should be a line in standard zone format, like "<TTL> <CLASS> <TYPE> <RRDATA>"
+                            For example: "3600 IN FH /ndn/ucla.edu".
+                            If this parameter not set, then input will be expected from the standard input''')
+args = parser.parse_args()
+
+if (not args.zone):
+    parser.print_help ()
+    exit (1)
+######################################################################
+######################################################################
+######################################################################
+
+if( __name__ == '__main__' ):
+    if not args.path:
+        args.path = "%s/.dyndns" % os.getenv ("HOME")
+
+    if not os.path.exists (args.path):
+        sys.stdout.write ("No keys are configured in [%s]\n" % args.path)
+        exit (1)
+
+    try:
+        zone_ndn = pyccn.Name (args.zone)
+        zone_dns = ndns.dnsify (args.zone)
+    except NameError as e:
+        sys.stderr.write ("ERROR: %s\n\n" % e)
+        parser.print_help ()
+        exit (1)
+    
+    _dyndns = dyndns.session (args.path)
+
+    try:
+        zone = _dyndns.query (dyndns.Zone).filter (dyndns.Zone.has_name (zone_ndn)).first ()
+    except:
+        sys.stderr.write ("ERROR: Zone [%s] is not configured\n" % zone_ndn)
+        exit (1)
+        
+    if args.key:
+        try:
+            key = _dyndns.query (dyndns.Key).with_parent (zone).filter (dyndns.Key.has_name (pyccn.Name (args.key))).first ()
+        except:
+            sys.stderr.write ("ERROR: Not valid or non-existing key [%s]\n" % args.key)
+            exit (1)
+    else:
+        try:
+            key = zone.default_key
+        except:
+            sys.stderr.write ("ERROR: default key is not configured for the zone [%s]\n" % zone_ndn)
+            exit (1)
+
+    # Use version, so don't really need to figure out the sequence number
+    # # Figure out which sequence number to use
+    # result = ndns.query.SimpleQuery.get (zone.name, None, dns.name.from_text (key.label).relativize (dns.name.root), "NDNCERTSEQ")
+    # if not result or not dyndns.TrustPolicy.verify (result[0]):
+    #     sys.stderr.write ("ERROR: authoritative server is not responding or not trusted\n")
+    #     exit (1)
+
+    origin = dns.name.from_text (zone_dns)
+    if args.rr:
+        zonefile = dns.zone.from_text (args.rr, origin = origin, check_origin = False)
+    else:
+        zonefile = dns.zone.from_file (sys.stdin, origin = origin, check_origin = False)
+    
+    query = pyccn.Name (zone.name).append ("DNS")
+
+    default_rtt = 3600
+    for (name, ttl, rdata) in zonefile.iterate_rdatas ():
+        if ttl <= 0:
+            ttl = default_rtt
+        rrset = ndns.add_rr (_dyndns, zone, origin, name, ttl, rdata)
+
+        co = ndns.createSignedRRsetData (_dyndns, rrset, key)
+        query = query.append (co.get_ccnb ())
+
+    query = query.append ("NDNUPDATE")
+
+    ndn = pyccn.CCN ()
+    ndn.defer_verification ()
+
+    result = ndn.get (query)
+    if not result or not dyndns.TrustPolicy.verify (result):
+        print "NDNS server is not responding or not trusted"
+    else:
+        print result.content

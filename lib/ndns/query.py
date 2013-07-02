@@ -52,29 +52,32 @@ class SimpleQuery:
             raise QueryAnswerNotTrusted
             
         if parse_dns:
-            if not rrtype:
-                rrtype = query[-1] if query[-1][0] != '\xFD' else query[-2]
-
-            if rrtype == "NDNCERT":
-                if not zone or not label:
-                    matches = re.match ("^((/[^/]+)*)/DNS((/[^/]+)*)/NDNCERT", str(query))
-                    if not matches:
-                        raise QueryException ("Incorrectly formatted query [%s]" % query)
-
-                    dns_zone = dns.name.from_text (dnsify(str(matches.group (1))))
-                    dns_label = dns.name.from_text (dnsify(str(matches.group (3))), origin = dns_zone)
-                else:
-                    dns_zone = dns.name.from_text (dnsify(str(zone)))
-                    dns_label = dns.name.from_text (dnsify(str(label)), origin = dns_zone)
-
-                ndncert = dns.rdtypes.IN.NDNCERT.NDNCERT (dns.rdataclass.IN, dns.rdatatype.NDNCERT, result.content)
-                rrset = dns.rrset.RRset (dns_label, dns.rdataclass.IN, dns.rdatatype.NDNCERT)
-                rrset.add (ttl = result.signedInfo.freshnessSeconds, rd = ndncert)
-    
-                msg = dns.message.Message (id=0)
-                msg.answer.append (rrset)
-            else:
+            try:
                 msg = dns.message.from_wire (result.content)
+            except:
+                if not rrtype:
+                    rrtype = query[-1] if query[-1][0] != '\xFD' else query[-2]
+    
+                if rrtype == "NDNCERT":
+                    if not zone or not label:
+                        matches = re.match ("^((/[^/]+)*)/DNS((/[^/]+)*)/NDNCERT", str(query))
+                        if not matches:
+                            raise QueryException ("Incorrectly formatted query [%s]" % query)
+    
+                        dns_zone = dns.name.from_text (dnsify(str(matches.group (1))))
+                        dns_label = dns.name.from_text (dnsify(str(matches.group (3))), origin = dns_zone)
+                    else:
+                        dns_zone = dns.name.from_text (dnsify(str(zone)))
+                        dns_label = dns.name.from_text (dnsify(str(label)), origin = dns_zone)
+    
+                    ndncert = dns.rdtypes.IN.NDNCERT.NDNCERT (dns.rdataclass.IN, dns.rdatatype.NDNCERT, result.content)
+                    rrset = dns.rrset.RRset (dns_label, dns.rdataclass.IN, dns.rdatatype.NDNCERT)
+                    rrset.add (ttl = result.signedInfo.freshnessSeconds, rd = ndncert)
+        
+                    msg = dns.message.Message (id=0)
+                    msg.answer.append (rrset)
+                else:
+                    msg = dns.message.from_wire (result.content)
         else:
             msg = None
 

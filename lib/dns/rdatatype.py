@@ -94,6 +94,8 @@ DLV = 32769
 FH = 65429
 NEXISTS = 65430
 NDNCERT = 65431
+NDNCERTSEQ = 65432
+NDNAUTH = 65433
 
 _by_text = {
     'NONE' : NONE,
@@ -160,6 +162,8 @@ _by_text = {
     'FH' : FH,
     'NEXISTS' : NEXISTS,
     'NDNCERT' : NDNCERT,
+    'NDNCERTSEQ' : NDNCERTSEQ,
+    'NDNAUTH' : NDNAUTH,
     }
 
 # We construct the inverse mapping programmatically to ensure that we
@@ -181,6 +185,8 @@ _singletons = {
     NSEC : True,
     NEXISTS : True,
     NDNCERT : True,
+    NDNCERTSEQ : True,
+    NDNAUTH : True,
     # CNAME is technically a singleton, but we allow multiple CNAMEs.
     }
 

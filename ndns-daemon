@@ -21,10 +21,14 @@ import os, functools, signal, daemon
 import setproctitle
 import pyccn
 import dns.rdataclass, dns.rdatatype, dns.rdata, dns.rrset, dns.zone
+from multiprocessing.pool import ThreadPool
 
 # part of lib/
 import ndns
 from ndns.policy.identity import *
+import dns.rdtypes.IN.NDNAUTH
+import dns.rdtypes.IN.NEXISTS
+import dns.rdtypes.IN.NDNCERTSEQ
 
 ######################################################################
 ######################################################################
@@ -79,12 +83,15 @@ class NdnsDaemon:
 
         self._startZoneServing ()
 
+        self._threadPool = ThreadPool (processes = 1)
         self._eventLoop = pyccn.EventLoop (self._face)
         self._eventLoop.run ()
 
         _LOG.info ('Daemon stopped')
 
     def terminate (self):
+        self._threadPool.terminate ()
+        self._threadPool.join ()
         self._stopZoneServing ()
         self._eventLoop.stop ()
         self._face = None
@@ -118,16 +125,20 @@ class NdnsDaemon:
 
         _LOG.debug ("zoneId: [%d], zoneName: [%s]" % (zone.id, zone.name))
 
-        if (len(interest.name) <= len(zone.name) + 1):
-            _LOG.debug ("Invalid request. Ignoring")
-            return pyccn.RESULT_OK
-
+        # if (len(interest.name) <= len(zone.name) + 1):
+        #     _LOG.debug ("Invalid request. Ignoring")
+        #     return pyccn.RESULT_OK
 
         if interest.name[-1][0] == '\xFD':
             # allow version to be specified, but ignore it for the database lookup
             request_name = pyccn.Name (interest.name[:-1])
         else:
             request_name = interest.name
+
+        if request_name[-1] == "NDNUPDATE":
+            _LOG.debug ("TEST")
+            self._threadPool.apply_async (self._processDyNDNS, (zone, basename, interest, ))
+            return pyccn.RESULT_OK
 
         try:
             rrtype = dns.rdatatype.from_text (request_name[-1])
@@ -143,12 +154,44 @@ class NdnsDaemon:
 
         rrset = self._ndns.query (ndns.RRSet).with_parent (zone).filter_by (label = label.to_text (), rtype = rrtype).first ()
 
-        # the big question is what to do when there is no data..
-        # .. this is more a theory question, than the implementation. For now we just don't return anything and client will timeout
-
         if not rrset:
-            _LOG.debug ("(!!! no action defined yet!!!) The requested record (%s %s) not found in zone [%s]" %
-                        (label.to_text (), dns.rdatatype.to_text (rrtype), zone.name))
+            # check if there is more a specific record:
+            more_specific_rrset = self._ndns.query (ndns.RRSet).\
+                with_parent (zone).\
+                filter (ndns.RRSet.label.like ("%%.%s" % label.to_text ()), ndns.RRSet.rtype == rrtype).first ()
+            if more_specific_rrset:
+
+                msg = dns.message.Message (id=0)
+                rrset = dns.rrset.RRset (zone.dns_name, dns.rdataclass.IN, dns.rdatatype.NDNAUTH)
+                rrset.add (ttl = zone.soa[0].rrs[0].ttl, rd = dns.rdtypes.IN.NDNAUTH.NDNAUTH (dns.rdataclass.IN, dns.rdatatype.NDNAUTH, zone.name))
+                msg.authority.append (rrset)
+
+                dataPacket = ndns.createSignedData (self._ndns, 
+                                                    interest.name.appendVersion (), 
+                                                    msg.to_wire (origin = zone.dns_name), 
+                                                    zone.soa[0].rrs[0].ttl, 
+                                                    zone.default_key)
+
+                _LOG.debug ("<< Requested record doesn't exist, but there is a more specific record. Returning NDNAUTH as [%s]" % dataPacket.name)
+                self._face.put (dataPacket)
+            else:
+                # _LOG.debug ("(!!! no action defined yet!!!) The requested record (%s %s) not found in zone [%s]" %
+                #             (label.to_text (), dns.rdatatype.to_text (rrtype), zone.name))
+
+                msg = dns.message.Message (id=0)
+                rrset = dns.rrset.RRset (label, dns.rdataclass.IN, dns.rdatatype.NEXISTS)
+                rrset.add (ttl = zone.soa[0].rrs[0].ttl, rd = dns.rdtypes.IN.NEXISTS.NEXISTS (dns.rdataclass.IN, dns.rdatatype.NEXISTS))
+                msg.answer.append (rrset)
+
+                dataPacket = ndns.createSignedData (self._ndns, 
+                                                    interest.name.appendVersion (), 
+                                                    msg.to_wire (origin = zone.dns_name), 
+                                                    zone.soa[0].rrs[0].ttl, 
+                                                    zone.default_key)
+
+                _LOG.debug ("<< Requested record nor more specific record exists. Returning NEXISTS as part of [%s]" % dataPacket.name)
+                self._face.put (dataPacket)
+
             return pyccn.RESULT_OK
 
         dataPacket = rrset.ndndata
@@ -164,6 +207,94 @@ class NdnsDaemon:
         self._face.put (dataPacket)
 
         return pyccn.RESULT_OK
+
+    def _processDyNDNS (self, zone, basename, interest):
+        session = ndns.ndns.ndns_session ()
+        zone = session.query (ndns.Zone).filter_by (id = zone.id).first ()
+
+        for update in interest.name[len(basename):-1]:
+            try:
+                dataPacket = pyccn.ContentObject.from_ccnb (update)
+                _LOG.debug ("Processing %s" % dataPacket.name)
+                
+                if dataPacket.name[:len(basename)] != basename[:]:
+                    _LOG.warn ("Record [%s] does not belong to the zone" % dataPacket.name)
+                    continue
+
+                if not ndns.TrustPolicy.verify (dataPacket):
+                    _LOG.warn ("Data [%s] packet cannot be verified" % dataPacket.name)
+                    continue
+
+                seqno = pyccn.Name ().append (dataPacket.name[-1])
+                label = dns.name.from_text (ndns.dnsify (str (pyccn.Name (dataPacket.name[len(basename):-2])))).relativize (origin = dns.name.root)
+                rtype = dataPacket.name[-2]
+
+                if not self._authorizeKey (session, zone, basename, dataPacket.signedInfo.keyLocator.keyName, seqno):
+                    _LOG.warn ("UPDATE is signed with unrecognizeable key [%s]" % dataPacket.signedInfo.keyLocator.keyName)
+                    continue
+
+                _LOG.info ("DyNDNS update authorized: [%s]" % dataPacket.name)
+                msg = dns.message.from_wire (dataPacket.content)
+                
+                dns_rrset = msg.answer[0]
+                rrset = session.query (ndns.RRSet).\
+                    with_parent (zone).\
+                    filter_by (label = label.to_text (), rclass = dns_rrset.items[0].rdclass, rtype = dns_rrset.items[0].rdtype).\
+                    first ()
+
+                if not rrset:
+                    rrset = ndns.RRSet (zone = zone, 
+                                        label = label.to_text (), 
+                                        rclass = dns_rrset.items[0].rdclass, rtype = dns_rrset.items[0].rdtype, 
+                                        ndndata = dataPacket)
+                else:
+                    rrset.rrs = []
+                    rrset.ndndata = dataPacket
+
+                for rdata in dns_rrset.items:
+                    rr = ndns.RR (rrset = rrset, ttl = dns_rrset.ttl, rrdata = rdata)
+
+                session.commit ()
+
+                result = ndns.createSignedData (session, interest.name.appendVersion (), "OK", 1, zone.default_key)
+                self._face.put (result)
+
+            except Exception, e:
+                _LOG.warn ("Undecodeable component in DyNDNS update: [%s]" % update)
+                _LOG.warn ("%s" % e)
+                continue
+            
+    def _authorizeKey (self, session, zone, basename, keyName, seqno):
+        if (keyName[-1] != "NDNCERT"):
+            return False
+
+        key_label = dns.name.from_text (ndns.dnsify (str (pyccn.Name (keyName[len(basename):-1])))).\
+            relativize (origin = dns.name.root)
+
+        key = session.query (ndns.RRSet).with_parent (zone).filter_by (label = key_label.to_text (), rtype = dns.rdatatype.NDNCERT).first ()
+        if not key:
+            _LOG.warn ("Key [%s] has been validated, but does not belong to the zone. Denying update" % keyName)
+            return False
+        
+        current_key_seq = session.query (ndns.RRSet).with_parent (zone).filter_by (label = key_label.to_text (), rtype = dns.rdatatype.NDNCERTSEQ).first ()
+        
+        if not current_key_seq:
+            current_key_seq = ndns.RRSet (label = key_label.to_text (), zone = zone, rclass = dns.rdataclass.IN, rtype = dns.rdatatype.NDNCERTSEQ)
+            rd = dns.rdtypes.IN.NDNCERTSEQ.NDNCERTSEQ (rdclass = dns.rdataclass.IN, rdtype = dns.rdatatype.NDNCERTSEQ, seq = pyccn.Name ())
+            rr = ndns.RR (ttl = 0, rrdata = rd, rrset = current_key_seq)
+
+        print current_key_seq.rrs[0].dns_rrdata
+        if current_key_seq.rrs[0].dns_rrdata.seq >= seqno:
+            _LOG.warn ("Replay attack detected, denying the update with sequence number [%s]" % seqno)
+            return False
+
+        updated_rr = current_key_seq.rrs[0].dns_rrdata
+        updated_rr.seq = seqno
+        current_key_seq.rrs[0].rrdata = updated_rr
+        current_key_seq.refresh_ndndata (session, zone.default_key)
+        session.commit ()
+
+        return True
 
 # main
 if( __name__ == '__main__' ):

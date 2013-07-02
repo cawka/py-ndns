@@ -72,6 +72,7 @@ if( __name__ == '__main__' ):
             ttl = default_rtt
 
         print "Create record: '%s %s %d %s'" % (name, dns.rdatatype.to_text (rdata.rdtype), ttl, rdata.to_text ())
-        ndns.add_rr (_ndns, zone, origin, name, ttl, rdata)
+        rrset = ndns.add_rr (_ndns, zone, origin, name, ttl, rdata)
+        rrset.refresh_ndndata (_ndns, zone.default_key)
 
     _ndns.commit ()

@@ -14,18 +14,19 @@ import re, logging, logging.handlers, sys
 
 class IdentityPolicy:
     def __init__ (self, anchors = [], rules = [], chain_limit = 10):
-        self._ndn = pyccn.CCN ()
-        self._ndn.defer_verification (True)
-
         self.anchors = anchors
         self.rules = rules
         self.chain_limit = chain_limit
 
         self._LOG = logging.getLogger ("ndns.policy.Identity")
 
-    def verify (self, dataPacket):
+    def verify (self, dataPacket, ndn = None):
         if len (self.anchors) == 0:
             return False
+
+        if not ndn:
+            _ndn = pyccn.CCN ()
+            _ndn.defer_verification (True)
 
         limit_left = self.chain_limit
         
@@ -47,7 +48,7 @@ class IdentityPolicy:
             if not self.authorize_by_rule (data_name, key_name):
                 return False
 
-            keyDataPacket = self._ndn.get (key_name, timeoutms = 3000)
+            keyDataPacket = _ndn.get (key_name, timeoutms = 3000)
             if not keyDataPacket:
                 return False
 

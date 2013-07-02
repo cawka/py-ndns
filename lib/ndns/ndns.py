@@ -57,6 +57,18 @@ def ndns_session (config = "etc/ndns.conf"):
     session.keydir = keydir
     return session
 
+def createSignedData (session, name, content, freshness, key, type = pyccn.CONTENT_DATA):
+    signingKey = key.private_key (session.keydir)
+    signedInfo = pyccn.SignedInfo (key_digest = signingKey.publicKeyID, key_locator = key.key_locator, 
+                                   freshness = freshness,
+                                   type = type)
+    # , py_timestamp = time.mktime (time.gmtime()))
+
+    co = pyccn.ContentObject (name = name, signed_info = signedInfo, content = content)
+
+    co.sign (signingKey)
+    return co
+
 def createSignedRRsetData (session, rrset, key):
     label = dns.name.from_text (rrset.label).relativize (dns.name.root)
 
@@ -99,17 +111,18 @@ def createSignedRRsetData (session, rrset, key):
             rrset_name = rrset_name.append (label)
     rrset_name = rrset_name.append (dns.rdatatype.to_text (rdtype))
     rrset_name = rrset_name.appendVersion ()
-    
-    signingKey = key.private_key (session.keydir)
-    signedInfo = pyccn.SignedInfo (key_digest = signingKey.publicKeyID, key_locator = key.key_locator, 
-                                   freshness = ttl,
-                                   type = pyccn.CONTENT_DATA if rdtype != dns.rdatatype.NDNCERT else pyccn.CONTENT_KEY)
-    # , py_timestamp = time.mktime (time.gmtime()))
 
-    co = pyccn.ContentObject (name = rrset_name, signed_info = signedInfo, content = content)
+    return createSignedData (session, rrset_name, content, ttl, key, type = pyccn.CONTENT_DATA if rdtype != dns.rdatatype.NDNCERT else pyccn.CONTENT_KEY)    
+    # signingKey = key.private_key (session.keydir)
+    # signedInfo = pyccn.SignedInfo (key_digest = signingKey.publicKeyID, key_locator = key.key_locator, 
+    #                                freshness = ttl,
+    #                                type = pyccn.CONTENT_DATA if rdtype != dns.rdatatype.NDNCERT else pyccn.CONTENT_KEY)
+    # # , py_timestamp = time.mktime (time.gmtime()))
 
-    co.sign (signingKey)
-    return co
+    # co = pyccn.ContentObject (name = rrset_name, signed_info = signedInfo, content = content)
+
+    # co.sign (signingKey)
+    # return co
 
 def add_rr (session, zone, origin, name, ttl, rdata):
     # print "Create record: '%s %s %d %s'" % (name, dns.rdatatype.to_text (rdata.rdtype), ttl, rdata.to_text ())
@@ -134,4 +147,4 @@ def add_rr (session, zone, origin, name, ttl, rdata):
     rrset.rrs.append (rr)  
     rr.rrdata = rdata
 
-    rrset.refresh_ndndata (session, zone.default_key)
+    return rrset
