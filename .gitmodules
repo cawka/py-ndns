@@ -1,0 +1,9 @@
+[submodule "contrib/PyCCN"]
+	path = contrib/PyCCN
+	url = git://github.com/cawka/PyCCN.git
+[submodule "contrib/dnspython"]
+	path = contrib/dnspython
+	url = git://github.com/cawka/dnspython.git
+[submodule "contrib/py-setproctitle"]
+	path = contrib/py-setproctitle
+	url = git://github.com/dvarrazzo/py-setproctitle.git

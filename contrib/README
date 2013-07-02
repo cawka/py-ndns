@@ -1,0 +1,24 @@
+
+The following python modules should be installed:
+
+On Ubuntu:
+
+sudo easy_install python-daemon
+sudo easy_install apscheduler
+sudo apt-get install python-sqlalchemy
+
+
+And everything from contrib/ folder.
+
+If necessary, contrib/ modules can be installed "locally":
+
+PyCCN:
+	PYTHONARCHDIR='../../lib' ./waf configure
+	./waf install
+
+dnspython:
+	./setup.py install --install-lib=../../lib
+
+py-setproctitle
+	python ./setup.py install --install-lib=../../lib
+
