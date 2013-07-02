@@ -113,16 +113,6 @@ def createSignedRRsetData (session, rrset, key, version = None):
     rrset_name = rrset_name.appendVersion (version)
 
     return createSignedData (session, rrset_name, content, ttl, key, type = pyccn.CONTENT_DATA if rdtype != dns.rdatatype.NDNCERT else pyccn.CONTENT_KEY)    
-    # signingKey = key.private_key (session.keydir)
-    # signedInfo = pyccn.SignedInfo (key_digest = signingKey.publicKeyID, key_locator = key.key_locator, 
-    #                                freshness = ttl,
-    #                                type = pyccn.CONTENT_DATA if rdtype != dns.rdatatype.NDNCERT else pyccn.CONTENT_KEY)
-    # # , py_timestamp = time.mktime (time.gmtime()))
-
-    # co = pyccn.ContentObject (name = rrset_name, signed_info = signedInfo, content = content)
-
-    # co.sign (signingKey)
-    # return co
 
 def add_rr (session, zone, origin, name, ttl, rdata):
     # print "Create record: '%s %s %d %s'" % (name, dns.rdatatype.to_text (rdata.rdtype), ttl, rdata.to_text ())

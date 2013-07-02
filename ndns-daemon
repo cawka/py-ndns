@@ -163,13 +163,15 @@ class NdnsDaemon:
 
                 msg = dns.message.Message (id=0)
                 rrset = dns.rrset.RRset (zone.dns_name, dns.rdataclass.IN, dns.rdatatype.NDNAUTH)
-                rrset.add (ttl = zone.soa[0].rrs[0].ttl, rd = dns.rdtypes.IN.NDNAUTH.NDNAUTH (dns.rdataclass.IN, dns.rdatatype.NDNAUTH, zone.name))
+                # zone.soa[0].rrs[0].ttl
+                rrset.add (ttl = 1, rd = dns.rdtypes.IN.NDNAUTH.NDNAUTH (dns.rdataclass.IN, dns.rdatatype.NDNAUTH, zone.name))
                 msg.authority.append (rrset)
 
                 dataPacket = ndns.createSignedData (self._ndns, 
                                                     interest.name.appendVersion (), 
                                                     msg.to_wire (origin = zone.dns_name), 
-                                                    zone.soa[0].rrs[0].ttl, 
+                                                    # zone.soa[0].rrs[0].ttl, 
+                                                    1,
                                                     zone.default_key)
 
                 _LOG.debug ("<< Requested record doesn't exist, but there is a more specific record. Returning NDNAUTH as [%s]" % dataPacket.name)
@@ -180,13 +182,15 @@ class NdnsDaemon:
 
                 msg = dns.message.Message (id=0)
                 rrset = dns.rrset.RRset (label, dns.rdataclass.IN, dns.rdatatype.NEXISTS)
-                rrset.add (ttl = zone.soa[0].rrs[0].ttl, rd = dns.rdtypes.IN.NEXISTS.NEXISTS (dns.rdataclass.IN, dns.rdatatype.NEXISTS))
+                # zone.soa[0].rrs[0].ttl
+                rrset.add (ttl = 1, rd = dns.rdtypes.IN.NEXISTS.NEXISTS (dns.rdataclass.IN, dns.rdatatype.NEXISTS))
                 msg.answer.append (rrset)
 
                 dataPacket = ndns.createSignedData (self._ndns, 
                                                     interest.name.appendVersion (), 
                                                     msg.to_wire (origin = zone.dns_name), 
-                                                    zone.soa[0].rrs[0].ttl, 
+                                                    # zone.soa[0].rrs[0].ttl, 
+                                                    1,
                                                     zone.default_key)
 
                 _LOG.debug ("<< Requested record nor more specific record exists. Returning NEXISTS as part of [%s]" % dataPacket.name)
@@ -236,28 +240,62 @@ class NdnsDaemon:
                 _LOG.info ("DyNDNS update authorized: [%s]" % dataPacket.name)
                 msg = dns.message.from_wire (dataPacket.content)
                 
-                dns_rrset = msg.answer[0]
-                rrset = session.query (ndns.RRSet).\
-                    with_parent (zone).\
-                    filter_by (label = label.to_text (), rclass = dns_rrset.items[0].rdclass, rtype = dns_rrset.items[0].rdtype).\
-                    first ()
+                if dns.opcode.from_flags (msg.flags) == dns.opcode.UPDATE:
+                    count = 0
 
-                if not rrset:
-                    rrset = ndns.RRSet (zone = zone, 
-                                        label = label.to_text (), 
-                                        rclass = dns_rrset.items[0].rdclass, rtype = dns_rrset.items[0].rdtype, 
-                                        ndndata = dataPacket)
+                    extra_msg = ""
+                    for dns_update in msg.authority:
+                        if not dns_update.deleting or len(dns_update.items) != 0:
+                            _LOG.warn ("Only delete update is allowed in this way")
+                            extra_msg = "%s\n%s" % (extra_msg, "Only delete update is allowed in this way")
+                            continue
+
+                        if dns_update.rdtype == dns.rdatatype.ANY:
+                            _LOG.warn ("Not supported update type: [%s]" % dns_update)
+                            extra_msg = "%s\n%s" % (extra_msg, "Only delete RRset update is allowed")
+                            continue
+
+                        if dns_update.rdtype == dns.rdatatype.NDNCERTSEQ:
+                            _LOG.warn ("NDNCERTSEQ cannot be updated remotely")
+                            extra_msg = "%s\n%s" % (extra_msg, "NDNCERTSEQ cannot be updated remotely")
+                            continue
+
+                        label = dns_update.name.relativize (zone.dns_name)
+                        rtype = dns.rdatatype.to_text (dns_update.rdtype)
+
+                        for rrset in session.query (ndns.RRSet).\
+                                with_parent (zone).\
+                                filter_by (label = label.to_text (), rclass = dns_update.rdclass, rtype = dns_update.rdtype):
+                            _LOG.debug ("Deleting [%s]" % rrset.ndndata.name)
+                            session.delete (rrset)
+                            count += 1
+
+                    session.commit ()
+                    result = ndns.createSignedData (session, interest.name.appendVersion (), "OK: Deleted %d RR sets%s" % (count, extra_msg), 1, zone.default_key)
+                    self._face.put (result)
                 else:
-                    rrset.rrs = []
-                    rrset.ndndata = dataPacket
-
-                for rdata in dns_rrset.items:
-                    rr = ndns.RR (rrset = rrset, ttl = dns_rrset.ttl, rrdata = rdata)
-
-                session.commit ()
-
-                result = ndns.createSignedData (session, interest.name.appendVersion (), "OK", 1, zone.default_key)
-                self._face.put (result)
+                    dns_rrset = msg.answer[0]
+                    rrset = session.query (ndns.RRSet).\
+                        with_parent (zone).\
+                        filter_by (label = label.to_text (), rclass = dns_rrset.items[0].rdclass, rtype = dns_rrset.items[0].rdtype).\
+                        first ()
+                    
+                    if not rrset:
+                        rrset = ndns.RRSet (zone = zone, 
+                                            label = label.to_text (), 
+                                            rclass = dns_rrset.items[0].rdclass, rtype = dns_rrset.items[0].rdtype, 
+                                            ndndata = dataPacket)
+                    else:
+                        rrset.rrs = []
+                        rrset.ndndata = dataPacket
+                    
+                    for rdata in dns_rrset.items:
+                        rr = ndns.RR (rrset = rrset, ttl = dns_rrset.ttl, rrdata = rdata)
+                    
+                    session.commit ()
+                    
+                    result = ndns.createSignedData (session, interest.name.appendVersion (), "OK", 1, zone.default_key)
+                    self._face.put (result)
 
             except Exception, e:
                 _LOG.warn ("Undecodeable component in DyNDNS update: [%s]" % update)

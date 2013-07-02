@@ -62,6 +62,14 @@ class Key (Base):
             raise KeyException ("Key does not belong to the zone (KSK should be stored in the parent zone!)")
 
     @property
+    def ndn_label (self):
+        name = self.name
+        if name[:len(self.zone.name)] == self.zone.name:
+            return pyccn.Name (name[len(self.zone.name) + 1 : -1])
+        else:
+            raise KeyException ("Key does not belong to the zone (KSK should be stored in the parent zone!)")
+
+    @property
     def parent_label (self):
         if self.key_type != "KSK":
             raise KeyException ("Key.parent_label makes sense only for KSK keys")
