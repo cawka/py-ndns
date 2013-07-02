@@ -19,7 +19,7 @@ import ndns.query
 import dns.rdtypes.IN.NDNCERT
 import dns.rdataclass, dns.rdatatype
 import dns.zone
-import os, glob, re
+import os, glob, re, time, struct
 import pyccn
 
 ######################################################################
@@ -104,7 +104,16 @@ if( __name__ == '__main__' ):
             ttl = default_rtt
         rrset = ndns.add_rr (_dyndns, zone, origin, name, ttl, rdata)
 
-        co = ndns.createSignedRRsetData (_dyndns, rrset, key)
+    
+    base_version = int(time.time()) * 4096
+    def makeVersion (base, offset):
+        bintime = struct.pack("!Q", base + offset)
+        return bintime.lstrip(b'\x00')
+    offset = 0
+
+    for rrset in zone.rrsets:
+        co = ndns.createSignedRRsetData (_dyndns, rrset, key, version = makeVersion (base_version, offset))
+        offset += 1
         query = query.append (co.get_ccnb ())
 
     query = query.append ("NDNUPDATE")

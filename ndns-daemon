@@ -196,8 +196,8 @@ class NdnsDaemon:
 
         dataPacket = rrset.ndndata
         if interest.name[:] != dataPacket.name[:len(interest.name)]:
-            print dataPacket.name[:len(interest.name)]
-            print interest.name[:]
+            # print dataPacket.name[:len(interest.name)]
+            # print interest.name[:]
             
             _LOG.debug ("Request is not in a canonical form (e.g., case mistmatch), requested data found, but cannot be returned")
             _LOG.debug ("        Could be version mistmatch")
@@ -283,7 +283,6 @@ class NdnsDaemon:
             rd = dns.rdtypes.IN.NDNCERTSEQ.NDNCERTSEQ (rdclass = dns.rdataclass.IN, rdtype = dns.rdatatype.NDNCERTSEQ, seq = pyccn.Name ())
             rr = ndns.RR (ttl = 0, rrdata = rd, rrset = current_key_seq)
 
-        print current_key_seq.rrs[0].dns_rrdata
         if current_key_seq.rrs[0].dns_rrdata.seq >= seqno:
             _LOG.warn ("Replay attack detected, denying the update with sequence number [%s]" % seqno)
             return False

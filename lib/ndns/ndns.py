@@ -69,7 +69,7 @@ def createSignedData (session, name, content, freshness, key, type = pyccn.CONTE
     co.sign (signingKey)
     return co
 
-def createSignedRRsetData (session, rrset, key):
+def createSignedRRsetData (session, rrset, key, version = None):
     label = dns.name.from_text (rrset.label).relativize (dns.name.root)
 
     rdclass = rrset.rclass
@@ -110,7 +110,7 @@ def createSignedRRsetData (session, rrset, key):
         for label in ndn_label:
             rrset_name = rrset_name.append (label)
     rrset_name = rrset_name.append (dns.rdatatype.to_text (rdtype))
-    rrset_name = rrset_name.appendVersion ()
+    rrset_name = rrset_name.appendVersion (version)
 
     return createSignedData (session, rrset_name, content, ttl, key, type = pyccn.CONTENT_DATA if rdtype != dns.rdatatype.NDNCERT else pyccn.CONTENT_KEY)    
     # signingKey = key.private_key (session.keydir)
