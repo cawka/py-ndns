@@ -47,6 +47,8 @@ def ndns_session (config = "etc/ndns.conf"):
     conf = iscpy.ParseISCString (open (config).read ())
     zonedb = conf['options']['zonedb'].strip ("\"'")
     keydir = conf['options']['keydir'].strip ("\"'")
+    scopes = [pyccn.Name (scope.strip ("\"'")) for scope in conf['options']['scopes'].keys ()]
+
     db = create_engine ('sqlite:///%s' % zonedb)
     # db.echo = True
     
@@ -55,6 +57,7 @@ def ndns_session (config = "etc/ndns.conf"):
     sm = sessionmaker (bind = db)
     session = sm ()
     session.keydir = keydir
+    session.scopes = scopes
     return session
 
 def createSignedData (session, name, content, freshness, key, type = pyccn.CONTENT_DATA):

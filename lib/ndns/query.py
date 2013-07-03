@@ -47,6 +47,10 @@ class SimpleQuery:
     
         if not result:
             raise QueryNoAnswer
+
+        if hint:
+            # don't verify the outer part, it cannot be verified for now anyways
+            result = pyccn.ContentObject.from_ccnb (result.content)
         
         if not ndns.TrustPolicy.verify (result):
             raise QueryAnswerNotTrusted
@@ -89,14 +93,17 @@ class SimpleQuery:
 
         rrtype = dns.rdatatype.to_text (dns.rdatatype.from_text (rrtype))
 
-        query = pyccn.Name (zone).append ("DNS")
+        if hint:
+            query = pyccn.Name (hint).append ("\xF0.").append (zone).append ("DNS")
+        else:
+            query = pyccn.Name (zone).append ("DNS")
+
         if len(label) > 0:
-            for comp in label[0:len(label)]:
-                query = query.append (comp)
+            query = query.append (label)
+
         query = query.append (rrtype)
 
         return SimpleQuery.get_raw (query, zone, hint, label, rrtype, parse_dns, ndn)
-        
 
 class IterativeQuery:
     pass

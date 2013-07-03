@@ -74,11 +74,14 @@ class NdnsDaemon:
     def __init__ (self):
         setproctitle.setproctitle ("ndns-daemon")
         self._zones = []
+        self._scopes = []
+        self._autoScope = []
 
     def run (self):
         _LOG.info ('Daemon started')
 
         self._ndns = ndns.ndns_session ()
+        self._scopes = self._ndns.scopes
         self._face = pyccn.CCN ()
 
         self._startZoneServing ()
@@ -104,53 +107,94 @@ class NdnsDaemon:
 
     def updateLocalPrefix (self, oldPrefix, newPrefix):
         _LOG.info ("Update local prefix from [%s] to [%s]" % (oldPrefix, newPrefix))
-        pass
+        self._eventLoop.execute (functools.partial (self._updateLocalPrefix_Execute, newPrefix))
 
 #private:
+    def _updateLocalPrefix_Execute (self, newPrefix):
+        self._stopZoneServing ()
+        self._autoScope = [ newPrefix ]
+        self._startZoneServing ()
+        
+    def _enableZone (self, zone):
+        name = zone.name
+
+        self._face.setInterestFilterSimple (name.append ("DNS"),
+                                            functools.partial (self._onRequest, pyccn.Name (), zone))
+
+        activeScopes = []
+        for scope in self._scopes + self._autoScope:
+            if not scope.isPrefixOf (name):
+                activeScopes.append (str (scope))
+                self._face.setInterestFilterSimple (scope.append ("\xF0.").append (name).append ("DNS"),
+                                                    functools.partial (self._onRequest, scope.append ("\xF0."), zone))
+        _LOG.info ('>> Start serving zone [%s] (%s)' % (name, activeScopes))
+
+    def _disableZone (self, zone):
+        name = zone.name
+
+        self._face.clearInterestFilter (name.append ("DNS"))
+
+        activeScopes = []
+        for scope in self._scopes + self._autoScope:
+            if not scope.isPrefixOf (name):
+                activeScopes.append (str (scope))
+                self._face.clearInterestFilter (scope.append ("\xF0.").append (name).append ("DNS"))
+
+        _LOG.info ('<< Stop serving zone [%s] (%s)' % (name, activeScopes))
+
     def _startZoneServing (self):
         for zone in self._ndns.query (ndns.Zone):
-            _LOG.info ('>> Start serving zone [%s]' % zone.name)
-            self._face.setInterestFilterSimple (zone.name.append ("DNS"),
-                                                functools.partial (self._onRequest, zone))
+            self._enableZone (zone)
             self._zones.append (zone)
 
     def _stopZoneServing (self):
         for zone in self._zones:
-            _LOG.info ('<< Stop serving zone [%s]' % zone.name)
-            self._face.clearInterestFilter (zone.name.append ("DNS"))
+            self._disableZone (zone)
         self._zones = []
 
-    def _onRequest (self, zone, basename, interest):
-        _LOG.debug (">> basename [%s], interest [%s]" % (basename, interest.name))
+    def _onRequest (self, scope, zone, basename, interest):
+        _LOG.debug (">> scope [%s], zone [%s], basename [%s], interest [%s]" % (scope, zone.name, basename, interest.name))
 
-        _LOG.debug ("zoneId: [%d], zoneName: [%s]" % (zone.id, zone.name))
-
-        # if (len(interest.name) <= len(zone.name) + 1):
-        #     _LOG.debug ("Invalid request. Ignoring")
-        #     return pyccn.RESULT_OK
-
-        if interest.name[-1][0] == '\xFD':
-            # allow version to be specified, but ignore it for the database lookup
-            request_name = pyccn.Name (interest.name[:-1])
-        else:
-            request_name = interest.name
-
-        if request_name[-1] == "NDNUPDATE":
-            _LOG.debug ("TEST")
+        if interest.name[-1] == "NDNUPDATE":
             self._threadPool.apply_async (self._processDyNDNS, (zone, basename, interest, ))
             return pyccn.RESULT_OK
+
+        dataPacket = self._getRequestedData (zone, pyccn.Name (basename [len(scope):]), pyccn.Name (interest.name [len(scope):]))
+        if dataPacket:
+            if len (scope) == 0:
+                self._face.put (dataPacket)
+            else:
+                # will sign with real key, but not sure if it is really necessary
+                encapPacket = ndns.createSignedData (self._ndns, 
+                                                     scope.append (dataPacket.name),
+                                                     dataPacket.get_ccnb (), 
+                                                     dataPacket.signedInfo.freshnessSeconds,
+                                                     zone.default_key)
+                _LOG.debug ("Encapsulating into [%s]" % encapPacket.name)
+                self._face.put (encapPacket)
+
+        return pyccn.RESULT_OK
+
+    def _getRequestedData (self, zone, basename, interestName):
+        _LOG.debug (">> REAL: basename [%s], interest [%s]" % (basename, interestName))
+
+        if interestName[-1][0] == '\xFD':
+            # allow version to be specified, but ignore it for the database lookup
+            request_name = pyccn.Name (interestName[:-1])
+        else:
+            request_name = interestName
 
         try:
             rrtype = dns.rdatatype.from_text (request_name[-1])
         except Exception, e:
             _LOG.debug ("Invalid request: unknown or unrecognized RR type [%s] (%s)" % (request_name[-1], e))
-            return pyccn.RESULT_OK
+            return None
 
         try:
             label = dns.name.from_text (ndns.dnsify (str (pyccn.Name (request_name[len(basename):-1])))).relativize (origin = dns.name.root)
         except Exception, e:
             _LOG.debug ("Invalid request: label [%s] cannot be dnsified (%s)" % (request_name[len(basename):-1], e))
-            return pyccn.RESULT_OK
+            return None
 
         rrset = self._ndns.query (ndns.RRSet).with_parent (zone).filter_by (label = label.to_text (), rtype = rrtype).first ()
 
@@ -168,14 +212,14 @@ class NdnsDaemon:
                 msg.authority.append (rrset)
 
                 dataPacket = ndns.createSignedData (self._ndns, 
-                                                    interest.name.appendVersion (), 
+                                                    interestName.appendVersion (), 
                                                     msg.to_wire (origin = zone.dns_name), 
                                                     # zone.soa[0].rrs[0].ttl, 
                                                     1,
                                                     zone.default_key)
 
                 _LOG.debug ("<< Requested record doesn't exist, but there is a more specific record. Returning NDNAUTH as [%s]" % dataPacket.name)
-                self._face.put (dataPacket)
+                return dataPacket
             else:
                 # _LOG.debug ("(!!! no action defined yet!!!) The requested record (%s %s) not found in zone [%s]" %
                 #             (label.to_text (), dns.rdatatype.to_text (rrtype), zone.name))
@@ -187,30 +231,23 @@ class NdnsDaemon:
                 msg.answer.append (rrset)
 
                 dataPacket = ndns.createSignedData (self._ndns, 
-                                                    interest.name.appendVersion (), 
+                                                    interestName.appendVersion (), 
                                                     msg.to_wire (origin = zone.dns_name), 
                                                     # zone.soa[0].rrs[0].ttl, 
                                                     1,
                                                     zone.default_key)
 
                 _LOG.debug ("<< Requested record nor more specific record exists. Returning NEXISTS as part of [%s]" % dataPacket.name)
-                self._face.put (dataPacket)
-
-            return pyccn.RESULT_OK
+                return dataPacket
 
         dataPacket = rrset.ndndata
-        if interest.name[:] != dataPacket.name[:len(interest.name)]:
-            # print dataPacket.name[:len(interest.name)]
-            # print interest.name[:]
-            
+        if not interestName.isPrefixOf (dataPacket.name):
             _LOG.debug ("Request is not in a canonical form (e.g., case mistmatch), requested data found, but cannot be returned")
             _LOG.debug ("        Could be version mistmatch")
-            return pyccn.RESULT_OK
-
-        _LOG.debug ("<< Found a valid record, returning data object [%s]" % dataPacket.name)
-        self._face.put (dataPacket)
-
-        return pyccn.RESULT_OK
+            return None
+        else:
+            _LOG.debug ("<< Found a valid record, returning data object [%s]" % dataPacket.name)
+            return dataPacket
 
     def _processDyNDNS (self, zone, basename, interest):
         session = ndns.ndns.ndns_session ()

@@ -32,6 +32,7 @@ import base64
 parser = argparse.ArgumentParser(description='NDNS client tool')
 parser.add_argument('--dns', dest='dns', action='store_true', default=False,
                     help='''Expect DNS name, otherwise NDN name is expected as input''')
+
 parser.add_argument('-d', dest='debug', action='store_true', default=False,
                     help='''Include debug information in log output''')
 parser.add_argument('-v', dest='verbose', action='store_true', default=False,
@@ -42,6 +43,9 @@ parser.add_argument('-q', dest='quiet', action='store_true', default=False,
 
 parser.add_argument('--raw', dest='raw', action='store_true', default=False,
                     help='''zone includes full NDN name of the DNS record to be queried''')
+
+parser.add_argument('--hint', '--fh', '-f', dest='fh', type=str,
+                    help='''Forwarding hint to use for the query''')
 
 parser.add_argument('zone', metavar='zone', type=str,
                     help='''Zone to query (will not be needed later)''')
@@ -79,9 +83,9 @@ if( __name__ == '__main__' ):
 
     try:
         if not args.raw:
-            result, msg = ndns.SimpleQuery.get (zone, "", name, args.rrtype)
+            result, msg = ndns.SimpleQuery.get (zone, args.fh, name, args.rrtype)
         else:
-            result, msg = ndns.SimpleQuery.get_raw (zone)
+            result, msg = ndns.SimpleQuery.get_raw (zone, hint = args.fh)
             
     except dns.rdatatype.UnknownRdatatype:
         sys.stderr.write ("Requested an unrecognized RR type [%s] to query\n" % args.rrtype)
