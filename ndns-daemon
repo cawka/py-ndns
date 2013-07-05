@@ -43,6 +43,8 @@ parser.add_argument('-q', dest='quiet', action='store_true', default=False,
                     help='''Be quiet and do not write anything to stderr''')
 parser.add_argument('-l', dest='logfile', type=str,
                     help='''Write logging to the specified logfile''')
+parser.add_argument('--prefix-discovery', dest='prefix_discovery', action='store_true', default=False,
+                    help='''Enables automatic prefix discovery''')
 args = parser.parse_args()
 
 _LOG = logging.getLogger ("ndns")
@@ -390,8 +392,11 @@ if( __name__ == '__main__' ):
     }
 
     with context:
-        discovery = pyccn.LocalPrefixDiscovery (periodicity = 300)
-        discovery.subscribe ("ndns", ndns_daemon.updateLocalPrefix)
+        if args.prefix_discovery:
+            discovery = pyccn.LocalPrefixDiscovery (periodicity = 300)
+            discovery.subscribe ("ndns", ndns_daemon.updateLocalPrefix)
 
         ndns_daemon.run ()
-        discovery.shutdown ()
+
+        if args.prefix_discovery:
+            discovery.shutdown ()

@@ -19,8 +19,11 @@ import dns.message
 import dns.rdtypes.IN.NDNCERT
 import ndns
 import re
-
+import random
+import logging
 import pyccn
+
+_LOG = logging.getLogger ("ndns.query")
 
 class QueryException (Exception):
     pass
@@ -29,6 +32,9 @@ class QueryNoAnswer (QueryException):
     pass
 
 class QueryAnswerNotTrusted (QueryException):
+    pass
+
+class QueryNoValidAnswer (QueryException):
     pass
 
 class SimpleQuery:
@@ -43,6 +49,9 @@ class SimpleQuery:
             ndn = pyccn.CCN ()
             ndn.defer_verification ()
 
+        if hint:
+            query = pyccn.Name (hint).append ("\xF0.").append (query)
+
         result = ndn.get (query)
     
         if not result:
@@ -51,7 +60,7 @@ class SimpleQuery:
         if hint:
             # don't verify the outer part, it cannot be verified for now anyways
             result = pyccn.ContentObject.from_ccnb (result.content)
-        
+
         if not ndns.TrustPolicy.verify (result):
             raise QueryAnswerNotTrusted
             
@@ -91,22 +100,69 @@ class SimpleQuery:
     def get (zone, hint, label, rrtype, parse_dns = True, ndn = None):
         """hint is not used for now"""
 
+        _LOG.debug ("SimpleQuery: zone: %s, hint: %s, label %s, rrtype: %s" % (zone, hint, label, rrtype))
         rrtype = dns.rdatatype.to_text (dns.rdatatype.from_text (rrtype))
 
-        if hint:
-            query = pyccn.Name (hint).append ("\xF0.").append (zone).append ("DNS")
-        else:
-            query = pyccn.Name (zone).append ("DNS")
-
+        query = pyccn.Name (zone).append ("DNS")
         if len(label) > 0:
             query = query.append (label)
-
         query = query.append (rrtype)
 
         return SimpleQuery.get_raw (query, zone, hint, label, rrtype, parse_dns, ndn)
 
 class IterativeQuery:
-    pass
+    @staticmethod
+    def get (name, rrtype = "FH", ndn = None):
+        _LOG.debug ("IterativeQuery: name: %s, type: %s" % (name, rrtype))
+        zone = pyccn.Name ()
+        hint = None
+
+        if not ndn:
+            ndn = pyccn.CCN ()
+            ndn.defer_verification ()
+        
+        i = 0
+        while i < len(name):
+            label = pyccn.Name ().append (name[i])
+
+            [result, msg] = SimpleQuery.get (zone, hint, label, "NS", True, ndn)
+            while (i+1) < len(name) and (len(msg.answer)==0 and len(msg.authority)==1 and msg.authority[0].rdtype == dns.rdatatype.NDNAUTH):
+                i += 1
+                label = label.append (name[i])
+                [result, msg] = SimpleQuery.get (zone, hint, label, "NS", True, ndn)
+               
+            if len(msg.answer) == 0 or msg.answer[0].rdtype != dns.rdatatype.NS:
+                break
+                # raise QueryNoValidAnswer ()
+
+            rrdata = random.choice (msg.answer[0].items)
+            ndn_target = ndnify (rrdata.target.relativize (dns.name.root).to_text ())
+
+            if zone.isPrefixOf (ndn_target):
+                fh_label = pyccn.Name (ndn_target[len(zone):])
+                [result, msg] = SimpleQuery.get (zone, hint, fh_label, "FH", True, ndn)
+            else:
+                msg = IterativeQuery.get (ndn_target, ndn)
+
+            zone = zone.append (label)
+            label = pyccn.Name ()
+
+            if len(msg.answer) == 0 or msg.answer[0].rdtype != dns.rdatatype.FH:
+                break
+
+            rrdata = random.choice (msg.answer[0].items)
+            hint = rrdata.hint
+
+            _LOG.debug ("IterativeQuery: hint: %s, zone: %s" % (hint, zone))
+            i += 1
+
+        [result, msg] = SimpleQuery.get (zone, hint, label, rrtype, True, ndn)
+        while (i+1) < len(name) and (len(msg.answer)==0 and len(msg.authority)==1 and msg.authority[0].rdtype == dns.rdatatype.NDNAUTH):
+            i += 1
+            label = label.append (name[i])
+            [result, msg] = SimpleQuery.get (zone, hint, label, rrtype, True, ndn)
+
+        return [result, msg]
 
 class CachingQuery:
     pass
