@@ -32,10 +32,14 @@ class QueryNoAnswer (QueryException):
     pass
 
 class QueryAnswerNotTrusted (QueryException):
-    pass
+    def __init__ (self, result = None):
+        self.result = result
 
 class QueryNoValidAnswer (QueryException):
-    pass
+    def __init__ (self, msg = None, result = None, label_real = None):
+        self.msg = msg
+        self.result = result
+        self.label_real = label_real
 
 class SimpleQuery:
     """This is the most basic type of querying.  The user has to explicity 
@@ -45,12 +49,16 @@ class SimpleQuery:
     def get_raw (query, zone = None, hint = None, label = None, rrtype = None, parse_dns = True, ndn = None):
         """If zone, label, or rrtype is None, then they will be guessed from the query"""
 
+        _LOG.debug ("SimpleQuery.get_raw: query: %s, hint: %s" % (query, hint))
+
         if not ndn:
             ndn = pyccn.CCN ()
             ndn.defer_verification ()
 
-        if hint:
+        if hint and not hint.isPrefixOf (query):
             query = pyccn.Name (hint).append ("\xF0.").append (query)
+        else:
+            hint = None
 
         result = ndn.get (query)
     
@@ -62,7 +70,7 @@ class SimpleQuery:
             result = pyccn.ContentObject.from_ccnb (result.content)
 
         if not ndns.TrustPolicy.verify (result):
-            raise QueryAnswerNotTrusted
+            raise QueryAnswerNotTrusted (result)
             
         if parse_dns:
             try:
@@ -100,8 +108,11 @@ class SimpleQuery:
     def get (zone, hint, label, rrtype, parse_dns = True, ndn = None):
         """hint is not used for now"""
 
-        _LOG.debug ("SimpleQuery: zone: %s, hint: %s, label %s, rrtype: %s" % (zone, hint, label, rrtype))
-        rrtype = dns.rdatatype.to_text (dns.rdatatype.from_text (rrtype))
+        # _LOG.debug ("SimpleQuery: zone: %s, hint: %s, label %s, rrtype: %s" % (zone, hint, label, dns.rdatatype.to_text (rrtype)))
+        if isinstance(rrtype, str):
+            rrtype = dns.rdatatype.to_text (dns.rdatatype.from_text (rrtype))
+        else:
+            rrtype = dns.rdatatype.to_text (rrtype)
 
         query = pyccn.Name (zone).append ("DNS")
         if len(label) > 0:
@@ -110,10 +121,63 @@ class SimpleQuery:
 
         return SimpleQuery.get_raw (query, zone, hint, label, rrtype, parse_dns, ndn)
 
+
 class IterativeQuery:
     @staticmethod
-    def get (name, rrtype = "FH", ndn = None):
+    def _mergeIter (i1, i2):
+        for i in i1:
+            yield i
+        for i in i2:
+            yield i
+
+    @staticmethod
+    def _getMostSpecificAnswer (zone, hint, name_iter, rtype, tryEmptyLabel, ndn):
+        result = None
+        msg = None
+        label_real = pyccn.Name ()
+        label_logical = pyccn.Name ()
+        
+        try:
+            if tryEmptyLabel:
+                label_logical = pyccn.Name ()
+                label_real = pyccn.Name ()
+            else:
+                component = name_iter.next ()
+
+                label_logical = pyccn.Name ().append (ndnify (component))
+                label_real = pyccn.Name ().append (component)
+
+            [result, msg] = SimpleQuery.get (zone, hint, label_logical, rtype, True, ndn)
+            while (len(msg.answer)==0 and len(msg.authority)==1 and msg.authority[0].rdtype == dns.rdatatype.NDNAUTH):
+                component = name_iter.next ()
+
+                label_logical = label_logical.append (ndnify (component))
+                label_real = label_real.append (component)
+
+                [result, msg] = SimpleQuery.get (zone, hint, label_logical, rtype, True, ndn)
+           
+            if len(msg.answer) == 0 or msg.answer[0].rdtype != rtype:
+                raise QueryNoValidAnswer (msg, result, label_real)
+
+        except StopIteration:
+            pass
+
+        if result is None or msg is None or label_logical is None or label_real is None:
+            raise QueryNoValidAnswer (msg, result, label_real)
+        else:
+            return [result, msg, label_logical, label_real]
+
+
+    @staticmethod
+    def get (name, rrtype = dns.rdatatype.FH, parse_dns = True, ndn = None):
         _LOG.debug ("IterativeQuery: name: %s, type: %s" % (name, rrtype))
+
+        if rrtype is None:
+            rrtype = dns.rdatatype.FH
+
+        if isinstance (rrtype, str):
+            rrtype = dns.rdatatype.from_text (rrtype)
+
         zone = pyccn.Name ()
         hint = None
 
@@ -121,48 +185,62 @@ class IterativeQuery:
             ndn = pyccn.CCN ()
             ndn.defer_verification ()
         
-        i = 0
-        while i < len(name):
-            label = pyccn.Name ().append (name[i])
+        try:
+            label_real = pyccn.Name ()
+            name_iter = iter(name)
+            while True:
+                # _LOG.debug ("IterativeQuery: hint: %s, zone: %s" % (hint, zone))
 
-            [result, msg] = SimpleQuery.get (zone, hint, label, "NS", True, ndn)
-            while (i+1) < len(name) and (len(msg.answer)==0 and len(msg.authority)==1 and msg.authority[0].rdtype == dns.rdatatype.NDNAUTH):
-                i += 1
-                label = label.append (name[i])
-                [result, msg] = SimpleQuery.get (zone, hint, label, "NS", True, ndn)
-               
-            if len(msg.answer) == 0 or msg.answer[0].rdtype != dns.rdatatype.NS:
-                break
-                # raise QueryNoValidAnswer ()
+                [ns_result, ns_msg, label_logical, label_real] = \
+                    IterativeQuery._getMostSpecificAnswer (zone, hint, name_iter, 
+                                                           dns.rdatatype.NS, tryEmptyLabel = False, ndn = ndn)
 
-            rrdata = random.choice (msg.answer[0].items)
-            ndn_target = ndnify (rrdata.target.relativize (dns.name.root).to_text ())
+                ns_rrdata = random.choice (ns_msg.answer[0].items)
 
-            if zone.isPrefixOf (ndn_target):
-                fh_label = pyccn.Name (ndn_target[len(zone):])
-                [result, msg] = SimpleQuery.get (zone, hint, fh_label, "FH", True, ndn)
-            else:
-                msg = IterativeQuery.get (ndn_target, ndn)
+                # A couple of cheats, to handle names like "/ndn/ucla.edu/irl"
 
-            zone = zone.append (label)
-            label = pyccn.Name ()
+                # ns_target = ndnify (ns_rrdata.target.relativize (dns.name.root).to_text ())
+                dns_zone = dns.name.from_text (dnsify (str(zone)))
+                dns_ns_target = ns_rrdata.target
+                
+                if dns_ns_target.is_subdomain (dns_zone):
+                    ns_label = pyccn.Name (ndnify (dns_ns_target.relativize (dns_zone).to_text ()))
+                    [fh_result, fh_msg] = SimpleQuery.get (zone, hint, ns_label, dns.rdatatype.FH, True, ndn)
+                else:
+                    ns_target = pyccn.Name (ndnify (dns_ns_target.relativize (dns.name.root).to_text ()))
+                    [fh_result, fh_msg] = IterativeQuery.get (ns_target, dns.rdatatype.FH, True, ndn)
+                
+                # if zone.isPrefixOf (ns_target):
+                #     fh_label = pyccn.Name (ns_target[len(zone):])
+                #     [fh_result, fh_msg] = SimpleQuery.get (zone, hint, fh_label, dns.rdatatype.FH, True, ndn)
+                # else:
+                #     [fh_result, fh_msg] = IterativeQuery.get (ns_target, dns.rdatatype.FH, True, ndn)
+                    
+                if len(fh_msg.answer) == 0 or fh_msg.answer[0].rdtype != dns.rdatatype.FH:
+                    raise QueryNoAnswer ()
 
-            if len(msg.answer) == 0 or msg.answer[0].rdtype != dns.rdatatype.FH:
-                break
+                fh_rrdata = random.choice (fh_msg.answer[0].items)
+                hint = fh_rrdata.hint
 
-            rrdata = random.choice (msg.answer[0].items)
-            hint = rrdata.hint
+                zone = zone.append (label_real)
+                label_real = pyccn.Name ()
 
-            _LOG.debug ("IterativeQuery: hint: %s, zone: %s" % (hint, zone))
-            i += 1
+        except QueryNoValidAnswer, e:
+            label_real = e.label_real
+        except StopIteration:
+            pass
+        
+        for comp in name_iter:
+            label_real = label_real.append (comp)
 
-        [result, msg] = SimpleQuery.get (zone, hint, label, rrtype, True, ndn)
-        while (i+1) < len(name) and (len(msg.answer)==0 and len(msg.authority)==1 and msg.authority[0].rdtype == dns.rdatatype.NDNAUTH):
-            i += 1
-            label = label.append (name[i])
-            [result, msg] = SimpleQuery.get (zone, hint, label, rrtype, True, ndn)
+        if len(label_real) == 0:
+            if rrtype == dns.rdatatype.FH and not fh_msg is None and not fh_result is None:
+                return [fh_result, fh_msg]
+            elif rrtype == dns.rdatatype.NS and not ns_msg is None and not ns_result is None:
+                return [ns_result, ns_msg]
 
-        return [result, msg]
+        [real_result, real_msg] = SimpleQuery.get (zone, hint, label_real, rrtype, parse_dns, ndn)
+        return [real_result, real_msg]
 
 class CachingQuery:
     pass

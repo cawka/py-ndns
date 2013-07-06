@@ -10,7 +10,11 @@
 # 
 
 import pyccn
-import re, logging, logging.handlers, sys
+import re, logging, logging.handlers, sys, time
+# import ndns.query
+from ndns import query
+import dns.rdatatype
+import random
 
 class IdentityPolicy:
     def __init__ (self, anchors = [], rules = [], chain_limit = 10):
@@ -20,7 +24,13 @@ class IdentityPolicy:
 
         self._LOG = logging.getLogger ("ndns.policy.Identity")
 
-    def verify (self, dataPacket, ndn = None):
+        self.trustedCacheLimit = 10000
+        self.trustedCache = {}
+
+    def verify (self, dataPacket, ndn = None, limit_left = 10):
+        if limit_left <= 0:
+            return false
+
         if len (self.anchors) == 0:
             return False
 
@@ -28,44 +38,73 @@ class IdentityPolicy:
             _ndn = pyccn.CCN ()
             _ndn.defer_verification (True)
 
-        limit_left = self.chain_limit
-        
-        while (limit_left > 0):
-            data_name = dataPacket.name
-            key_name = dataPacket.signedInfo.keyLocator.keyName
+        data_name = dataPacket.name
+        key_name = dataPacket.signedInfo.keyLocator.keyName
 
-            self._LOG.debug ("data [%s] signed by [%s]" % (data_name, key_name))
+        self._LOG.debug ("%s data [%s] signed by [%s]" % ('--' * (11-limit_left), data_name, key_name))
 
-            anchor = self.authorize_by_anchor (data_name, key_name)
-            if anchor:
-                verified = dataPacket.verify_signature (anchor)
-                if verified:
-                    self._LOG.info ("anchor OKs [%s] (**[%s]**)" % (data_name, key_name))
-                else:
-                    self._LOG.info ("anchor FAILs [%s]" % (data_name))
-                return verified
+        anchor = self.authorize_by_anchor (data_name, key_name)
+        if anchor:
+            verified = dataPacket.verify_signature (anchor)
+            if verified:
+                self._LOG.info ("anchor OKs [%s] (**[%s]**)" % (data_name, key_name))
+            else:
+                self._LOG.info ("anchor FAILs [%s]" % (data_name))
+            return verified
 
-            if not self.authorize_by_rule (data_name, key_name):
-                return False
+        if not self.authorize_by_rule (data_name, key_name):
+            return False
 
-            keyDataPacket = _ndn.get (key_name, timeoutms = 3000)
+        try:
+            [key, ttl] = self.trustedCache[str(key_name)]
+            if time.time () > ttl:
+                del self.trustedCache[str(key_name)]
+                raise KeyError ()
+
+            self._LOG.info ("Using cached trusted version of key [%s]" % (key_name))
+            return dataPacket.verify_signature (key)
+        except KeyError:
+            zone = pyccn.Name ()
+            for comp in key_name:
+                if comp == "DNS":
+                    break
+                zone = zone.append (comp)
+            if comp != "DNS":
+                self._LOG.info ("Key name does not belong to DNS, trying to fetch directly")
+            elif len (zone) == 0:
+                self._LOG.info ("Key belongs to the root zone, no forwarding hint required")                
+                [keyDataPacket, not_used] = query.SimpleQuery.get_raw (key_name, hint = None, parse_dns = False)
+            else:
+                self._LOG.info ("+++++ Key name belongs to DNS, trying to discover forwarding hint for it")
+                try:
+                    [fh_result, fh_msg] = query.IterativeQuery.get (zone, dns.rdatatype.FH, True, _ndn)
+                    hint = random.choice (fh_msg.answer[0].items).hint
+                    self._LOG.info ("===== GOT HINT: %s" % hint)
+                    [keyDataPacket, not_used] = query.SimpleQuery.get_raw (key_name, hint = hint, parse_dns = False)
+                    
+                except query.QueryException:
+                    self._LOG.info ("Cannot find what is the forwarding hint, trying to get directly")
+                    keyDataPacket = _ndn.get (key_name, timeoutms = 3000)
+
             if not keyDataPacket:
                 return False
-
+            
             key = pyccn.Key.createFromDER (public = keyDataPacket.content)
             verified = dataPacket.verify_signature (key)
                 
             if not verified:
                 return False
-
+            
             self._LOG.info ("policy OKs [%s] to be signed with [%s]" % (data_name, key_name))
+            
+            if not self.verify (keyDataPacket, ndn, limit_left-1):
+                return False
 
-            limit_left -= 1
-            dataPacket = keyDataPacket
-            # continue
+            if len(self.trustedCache) > self.trustedCacheLimit:
+                self.trustedCache = {}
 
-        return False
-
+            self.trustedCache[str(key_name)] = [key, int (time.time ()) + keyDataPacket.signedInfo.freshnessSeconds]
+            return True
 
     def authorize_by_anchor (self, data_name, key_name):
         # self._LOG.debug ("== authorize_by_anchor == data: [%s], key: [%s]" % (data_name, key_name))

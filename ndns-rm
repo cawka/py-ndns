@@ -85,7 +85,7 @@ if( __name__ == '__main__' ):
             if len(rrset.rrs) == 0:
                 _ndns.delete (rrset)
             else:
-                rrset.refresh_ndndata ()
+                rrset.refresh_ndndata (_ndns, zone.default_key)
         else:
             print "%s: resource record '%s %d %s'" % ("NOT FOUND", name, ttl, rdata.to_text ())
 
