@@ -59,8 +59,11 @@ if( __name__ == '__main__' ):
                 try:
                     result, msg = ndns.query.SimpleQuery.get_raw (key.name, 
                                                                   zone = key.zone.name, hint = None, label = key.label, rrtype = "NDNCERT", 
-                                                                  parse_dns = False)
-                    sys.stdout.write (";;;;;; Key is installed in the zone and fully working\n")
+                                                                  parse_dns = True)
+                    if len(msg.answer) == 0 or msg.answer[0].rdtype != dns.rdatatype.NDNCERT:
+                        check_ok = False
+                    else:
+                        sys.stdout.write (";;;;;; Key is installed in the zone and fully working\n")
                 except:
                     check_ok = False
 
