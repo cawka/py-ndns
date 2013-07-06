@@ -22,6 +22,7 @@ import re
 import random
 import logging
 import pyccn
+import time
 
 _LOG = logging.getLogger ("ndns.query")
 
@@ -104,24 +105,6 @@ class SimpleQuery:
 
         return [result, msg]
 
-    @staticmethod
-    def get (zone, hint, label, rrtype, parse_dns = True, ndn = None):
-        """hint is not used for now"""
-
-        # _LOG.debug ("SimpleQuery: zone: %s, hint: %s, label %s, rrtype: %s" % (zone, hint, label, dns.rdatatype.to_text (rrtype)))
-        if isinstance(rrtype, str):
-            rrtype = dns.rdatatype.to_text (dns.rdatatype.from_text (rrtype))
-        else:
-            rrtype = dns.rdatatype.to_text (rrtype)
-
-        query = pyccn.Name (zone).append ("DNS")
-        if len(label) > 0:
-            query = query.append (label)
-        query = query.append (rrtype)
-
-        return SimpleQuery.get_raw (query, zone, hint, label, rrtype, parse_dns, ndn)
-
-
 class IterativeQuery:
     @staticmethod
     def _mergeIter (i1, i2):
@@ -147,14 +130,14 @@ class IterativeQuery:
                 label_logical = pyccn.Name ().append (ndnify (component))
                 label_real = pyccn.Name ().append (component)
 
-            [result, msg] = SimpleQuery.get (zone, hint, label_logical, rtype, True, ndn)
+            [result, msg] = ndns.CachingQueryObj.get_simple (zone, hint, label_logical, rtype, True, ndn)
             while (len(msg.answer)==0 and len(msg.authority)==1 and msg.authority[0].rdtype == dns.rdatatype.NDNAUTH):
                 component = name_iter.next ()
 
                 label_logical = label_logical.append (ndnify (component))
                 label_real = label_real.append (component)
 
-                [result, msg] = SimpleQuery.get (zone, hint, label_logical, rtype, True, ndn)
+                [result, msg] = ndns.CachingQueryObj.get_simple (zone, hint, label_logical, rtype, True, ndn)
            
             if len(msg.answer) == 0 or msg.answer[0].rdtype != rtype:
                 raise QueryNoValidAnswer (msg, result, label_real)
@@ -170,13 +153,13 @@ class IterativeQuery:
 
     @staticmethod
     def get (name, rrtype = dns.rdatatype.FH, parse_dns = True, ndn = None):
-        _LOG.debug ("IterativeQuery: name: %s, type: %s" % (name, rrtype))
-
         if rrtype is None:
             rrtype = dns.rdatatype.FH
 
         if isinstance (rrtype, str):
             rrtype = dns.rdatatype.from_text (rrtype)
+
+        _LOG.debug ("IterativeQuery: name: %s, type: %s" % (name, dns.rdatatype.to_text (rrtype)))
 
         zone = pyccn.Name ()
         hint = None
@@ -205,14 +188,14 @@ class IterativeQuery:
                 
                 if dns_ns_target.is_subdomain (dns_zone):
                     ns_label = pyccn.Name (ndnify (dns_ns_target.relativize (dns_zone).to_text ()))
-                    [fh_result, fh_msg] = SimpleQuery.get (zone, hint, ns_label, dns.rdatatype.FH, True, ndn)
+                    [fh_result, fh_msg] = ndns.CachingQueryObj.get_simple (zone, hint, ns_label, dns.rdatatype.FH, True, ndn)
                 else:
                     ns_target = pyccn.Name (ndnify (dns_ns_target.relativize (dns.name.root).to_text ()))
                     [fh_result, fh_msg] = IterativeQuery.get (ns_target, dns.rdatatype.FH, True, ndn)
                 
                 # if zone.isPrefixOf (ns_target):
                 #     fh_label = pyccn.Name (ns_target[len(zone):])
-                #     [fh_result, fh_msg] = SimpleQuery.get (zone, hint, fh_label, dns.rdatatype.FH, True, ndn)
+                #     [fh_result, fh_msg] = ndns.CachingQueryObj.get_simple (zone, hint, fh_label, dns.rdatatype.FH, True, ndn)
                 # else:
                 #     [fh_result, fh_msg] = IterativeQuery.get (ns_target, dns.rdatatype.FH, True, ndn)
                     
@@ -239,8 +222,83 @@ class IterativeQuery:
             elif rrtype == dns.rdatatype.NS and not ns_msg is None and not ns_result is None:
                 return [ns_result, ns_msg]
 
-        [real_result, real_msg] = SimpleQuery.get (zone, hint, label_real, rrtype, parse_dns, ndn)
+        [real_result, real_msg] = ndns.CachingQueryObj.get_simple (zone, hint, label_real, rrtype, parse_dns, ndn)
         return [real_result, real_msg]
 
 class CachingQuery:
-    pass
+    def __init__ (self):
+        self.cache = {}
+        self.cache_raw = {}
+
+    def get (self, name, rrtype = dns.rdatatype.FH, parse_dns = True, ndn = None):
+        if rrtype is None:
+            rrtype = dns.rdatatype.FH
+
+        if isinstance (rrtype, str):
+            rrtype = dns.rdatatype.from_text (rrtype)
+
+        class Key:
+            def __init__ (self, name, type):
+                self.name = name
+                self.type = type
+    
+            def __eq__ (self, other):
+                return self.name == other.name and self.type == other.type
+    
+            def __ne__ (self, other):
+                return self.name != other.name or self.type != other.type
+    
+            def __hash__ (self):
+                return str(self.name).__hash__ () + self.type
+
+        key = Key (name, rrtype)
+        try:
+            [result, msg, ttl] = self.cache[key]
+            if time.time () > ttl:
+                del self.cache[key]
+            else:
+                # _LOG.debug ("              found in cache")
+                return [result, msg]
+
+        except KeyError:
+            pass
+
+        # _LOG.debug ("CachingQuery: name: %s, type: %s" % (name, dns.rdatatype.to_text (rrtype)))
+        
+        [result, msg] = IterativeQuery.get (name, rrtype, parse_dns)
+        self.cache[key] = [result, msg, int (time.time ()) + result.signedInfo.freshnessSeconds]
+
+        return [result, msg]
+
+    def get_raw (self, query, zone = None, hint = None, label = None, rrtype = None, parse_dns = True, ndn = None):
+        key = str (query)
+        try:
+            [result, msg, ttl] = self.cache_raw [key]
+        
+            if time.time () > ttl:
+                del self.cache_raw[key]
+            else:
+                # _LOG.debug ("                   found in cache_raw [%s]" % (query))
+                return [result, msg]
+
+        except KeyError:
+            pass
+
+        # _LOG.debug ("CachingQuery.raw: [%s]" % (query))
+        [result, msg] = SimpleQuery.get_raw (query, zone, hint, label, rrtype, parse_dns, ndn)
+        self.cache_raw[key] = [result, msg, int (time.time ()) + result.signedInfo.freshnessSeconds]
+
+        return [result, msg]
+
+    def get_simple (self, zone, hint, label, rrtype, parse_dns = True, ndn = None):
+        if isinstance(rrtype, str):
+            rrtype = dns.rdatatype.to_text (dns.rdatatype.from_text (rrtype))
+        else:
+            rrtype = dns.rdatatype.to_text (rrtype)
+
+        query = pyccn.Name (zone).append ("DNS")
+        if len(label) > 0:
+            query = query.append (label)
+        query = query.append (rrtype)
+
+        return self.get_raw (query, zone, hint, label, rrtype, parse_dns, ndn)

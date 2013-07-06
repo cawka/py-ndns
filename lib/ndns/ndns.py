@@ -21,6 +21,7 @@ from rr import *
 from key import *
 from dnsifier import *
 from policy.identity import *
+import query
 
 import dns.rdataclass
 import dns.rdatatype
@@ -42,6 +43,8 @@ Pr3CwyBRloTJJbm5kf+pGuJh4fE9Qk0i/fS9Xs6gFup3oPnr+wFFjJObnRTrUsaM
              ["^((/[^/]+)*)/DNS((/[^/]+)*)/[^/]+/NDNCERT$", "\\1\\3", "^((/[^/]+)*)/([^/\.]+)\.([^/\.]+)/DNS((/[^/]+)*)$", "\\1/\\4/\\3\\5"],
              ["^((/[^/]+)*)/DNS((/[^/]+)*)/[^/]+/NDNCERT$", "\\1\\3", "(.*)", "\\1"]]
     )
+
+CachingQueryObj = query.CachingQuery ()
 
 def ndns_session (config = "etc/ndns.conf"):
     conf = iscpy.ParseISCString (open (config).read ())

@@ -37,6 +37,8 @@ parser.add_argument('-d', dest='debug', action='store_true', default=False,
                     help='''Include debug information in log output''')
 parser.add_argument('-v', dest='verbose', action='store_true', default=False,
                     help='''Include verbose information in log output''')
+parser.add_argument('--trust', dest='verbose_trust', action='store_true', default=False,
+                    help='''Include verbose information about trust in log output''')
 
 parser.add_argument('-q', dest='quiet', action='store_true', default=False,
                     help='''Output only RR data''')
@@ -65,6 +67,9 @@ _LOG.setLevel (logging.DEBUG if (args.debug) else logging.WARN)
 if args.verbose:
     _LOG.setLevel (logging.INFO)
 
+if not args.verbose_trust:
+    logging.getLogger ("ndns.policy.Identity").setLevel (logging.WARN)
+
 _handler = logging.StreamHandler (sys.stderr)
 _handler.setLevel (logging.DEBUG if (args.debug) else logging.WARN)
 if args.verbose:
@@ -92,14 +97,13 @@ if( __name__ == '__main__' ):
     try:
         if args.simple:
             if not args.raw:
-                result, msg = ndns.SimpleQuery.get (zone, args.fh, name, args.rrtype)
+                result, msg = ndns.CachingQueryObj.get_simple (zone, args.fh, name, args.rrtype)
             else:
-                result, msg = ndns.SimpleQuery.get_raw (zone, hint = args.fh)
+                result, msg = ndns.CachingQueryObj.get_raw (zone, hint = args.fh)
         else:
             args.rrtype = args.name
 
-            logging.getLogger ("ndns.policy.Identity").setLevel (logging.WARN)
-            result, msg = ndns.IterativeQuery.get (zone, args.rrtype)
+            result, msg = ndns.CachingQueryObj.get (zone, args.rrtype)
 
     except dns.rdatatype.UnknownRdatatype:
         sys.stderr.write ("Requested an unrecognized RR type [%s] to query\n" % args.rrtype)
