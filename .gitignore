@@ -8,3 +8,4 @@ lib/pyccn
 *.bak~*
 *~*
 lib/setproctitle*
+etc/ndns.conf
