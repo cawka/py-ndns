@@ -9,7 +9,7 @@
 # Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
 # 
 
-import pyccn
+import ndn
 import re, logging, logging.handlers, sys, time
 # import ndns.query
 import ndns
@@ -35,7 +35,7 @@ class IdentityPolicy:
             return False
 
         if not ndn:
-            _ndn = pyccn.CCN ()
+            _ndn = ndn.Face ()
             _ndn.defer_verification (True)
 
         data_name = dataPacket.name
@@ -75,7 +75,7 @@ class IdentityPolicy:
             self._LOG.info ("%s Using cached trusted version of key [%s]" % ('--' * (11-limit_left), key_name))
             return dataPacket.verify_signature (key)
         except KeyError:
-            zone = pyccn.Name ()
+            zone = ndn.Name ()
             for comp in key_name:
                 if comp == "DNS":
                     break
@@ -101,7 +101,7 @@ class IdentityPolicy:
             if not keyDataPacket:
                 return False
             
-            key = pyccn.Key.createFromDER (public = keyDataPacket.content)
+            key = ndn.Key.createFromDER (public = keyDataPacket.content)
             verified = dataPacket.verify_signature (key)
                 
             if not verified:
@@ -112,22 +112,22 @@ class IdentityPolicy:
             if not self.verify (keyDataPacket, ndn, limit_left-1):
                 return False
 
-            if dataPacket.signedInfo.type == pyccn.CONTENT_KEY:
+            if dataPacket.signedInfo.type == ndn.CONTENT_KEY:
                 if len(self.trustedCache) > self.trustedCacheLimit:
                     self.trustedCache = {}
                 
-                self.trustedCache[str(data_name)] = [pyccn.Key.createFromDER (public = dataPacket.content), int (time.time ()) + dataPacket.signedInfo.freshnessSeconds]
+                self.trustedCache[str(data_name)] = [ndn.Key.createFromDER (public = dataPacket.content), int (time.time ()) + dataPacket.signedInfo.freshnessSeconds]
 
             return True
 
     def authorize_by_anchor (self, data_name, key_name):
         # self._LOG.debug ("== authorize_by_anchor == data: [%s], key: [%s]" % (data_name, key_name))
 
-        if not isinstance (data_name, pyccn.Name):
-            data_name = pyccn.Name (data_name)
+        if not isinstance (data_name, ndn.Name):
+            data_name = ndn.Name (data_name)
 
-        if not isinstance (key_name, pyccn.Name):
-            key_name = pyccn.Name (key_name)
+        if not isinstance (key_name, ndn.Name):
+            key_name = ndn.Name (key_name)
 
         for anchor in self.anchors:
             if key_name == anchor[0]:
@@ -160,8 +160,8 @@ class IdentityPolicy:
                     if len(namespace_data) == 0:
                         namespace_data = "/"
 
-                    namespace_key = pyccn.Name (namespace_key)
-                    namespace_data = pyccn.Name (namespace_data)
+                    namespace_key = ndn.Name (namespace_key)
+                    namespace_data = ndn.Name (namespace_data)
 
                     # self._LOG.debug ("  >> rule: key [%s], data [%s]" % (namespace_key, namespace_data))
                     

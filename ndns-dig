@@ -18,7 +18,7 @@ import argparse, logging
 
 #install from contrib/
 import setproctitle
-import pyccn
+import ndn
 import dns.rdataclass, dns.rdatatype, dns.rdata, dns.rrset, dns.zone
 
 # part of lib/
@@ -83,13 +83,13 @@ _LOG.addHandler (_handler)
 
 # main
 if( __name__ == '__main__' ):
-    zone = pyccn.Name (args.zone)
+    zone = ndn.Name (args.zone)
 
     if args.simple:
         if args.name:
             if not args.ndn:
                 args.name = ndns.ndnify (args.name)
-            name = pyccn.Name (args.name)
+            name = ndn.Name (args.name)
         elif not args.raw:
             sys.stderr.write ("ERROR: For simple query, ``name'' (label) argument is mandatory\n")
             exit (5)
@@ -102,7 +102,6 @@ if( __name__ == '__main__' ):
                 result, msg = ndns.CachingQueryObj.get_raw (zone, hint = args.fh)
         else:
             args.rrtype = args.name
-
             result, msg = ndns.CachingQueryObj.get (zone, args.rrtype)
 
     except dns.rdatatype.UnknownRdatatype:
@@ -128,21 +127,3 @@ if( __name__ == '__main__' ):
     else:
         for rrset in msg.answer:
             print rrset.to_text ()
-
-    # # doint the iterative query
-    # for i in xrange (0, len(name)+1):
-    #     query = pyccn.Name (name[0:i]).append ("DNS")
-        
-    #     if i < len(name):
-    #         query = query.append (name[i])
-
-    #     if i == len(name): 
-    #         # now can query actual thing
-    #         query = query.append (rrtype)
-    #     else:
-    #         query = query.append ("NS")
-
-            
-    #     print query
-
-    

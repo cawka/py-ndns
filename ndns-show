@@ -18,7 +18,7 @@ import dns.rdatatype
 import dns.rdata
 import dns.rrset
 import ndns
-import pyccn
+import ndn
 
 ######################################################################
 ######################################################################
@@ -47,7 +47,7 @@ if( __name__ == '__main__' ):
     _ndns = ndns.ndns_session ()
 
     try:
-        zone_ndn = pyccn.Name (args.zone)
+        zone_ndn = ndn.Name (args.zone)
         zone_dns = dns.name.from_text (ndns.dnsify (args.zone))
     except NameError as e:
         sys.stderr.write ("ERROR: %s\n\n" % e)

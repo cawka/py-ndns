@@ -3,7 +3,7 @@ class ZoneDoesnExist (Exception):
     """NDNS exception"""
     pass
 
-import pyccn
+import ndn
 
 from sqlalchemy import Table, MetaData, Column, ForeignKey, Integer, String, Binary, UniqueConstraint
 from sqlalchemy.orm import relationship, backref
@@ -21,7 +21,7 @@ class Zone (Base):
 
     @hybrid_property
     def name (self):
-        return pyccn.Name (ccnb_buffer = self._name)
+        return ndn.Name (ccnb_buffer = self._name)
 
     @name.setter
     def name (self, value):
@@ -42,7 +42,7 @@ class RRSet (Base):
 
     @hybrid_property
     def ndndata (self):
-        return pyccn.ContentObject.from_ccnb (self._ndndata)
+        return ndn.ContentObject.from_ccnb (self._ndndata)
 
     @ndndata.setter
     def ndndata (self, ndndata):

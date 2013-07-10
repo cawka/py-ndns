@@ -9,7 +9,7 @@
 # Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
 # 
 
-import pyccn
+import ndn
 
 from sqlalchemy import Table, MetaData, Column, ForeignKey, Integer, String, Binary, UniqueConstraint
 from sqlalchemy.orm import relationship, backref
@@ -40,7 +40,7 @@ class Zone (Base):
 
     @property
     def name (self):
-        return pyccn.Name (ccnb_buffer = self._name)
+        return ndn.Name (ccnb_buffer = self._name)
 
     @property
     def dns_name (self):

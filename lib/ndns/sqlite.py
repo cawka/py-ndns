@@ -13,10 +13,10 @@ import db
 import sqlite3
 # , iscpy
 # import cStringIO
-# import pyccn
+# import ndn
 # import dns.rrset
 # import dns.message
-# from pyccn import _pyccn
+# from ndn import _ndn
 # import time
 # import sys
 # from dnsifier import *
@@ -94,7 +94,7 @@ END;
 #     def listRrSets (self, zone_id):
 #         c = self._db.cursor ()
 #         for rrset in c.execute ("SELECT id, label, class, type, ndndata FROM rrsets WHERE zone_id = ?", [zone_id]):
-#             co = pyccn.ContentObject.from_ccnb (rrset[4])
+#             co = ndn.ContentObject.from_ccnb (rrset[4])
 #             # print co.content
 #             msg = dns.message.from_wire (co.content)
 #             yield {"id": rrset[0], "rrset":msg.answer[0], "data":co, "label":rrset[1]}
@@ -115,7 +115,7 @@ END;
 
 #         for rrset in c.execute ("SELECT id, label, class, type, ndndata FROM rrsets WHERE zone_id = ? AND label = ?",
 #                                 [zone_id, label.to_text ()]):
-#             co = pyccn.ContentObject.from_ccnb (rrset[4])
+#             co = ndn.ContentObject.from_ccnb (rrset[4])
 #             msg = dns.message.from_wire (co.content)
 #             yield {"id":rrset[0], "rrset":msg.answer[0], "data":co}
         
@@ -133,7 +133,7 @@ END;
 #         if not row:
 #             return None
         
-#         co = pyccn.ContentObject.from_ccnb (row[4])
+#         co = ndn.ContentObject.from_ccnb (row[4])
 #         if parseDnsMessage:
 #             msg = dns.message.from_wire (co.content)
 #             return {"id":row[0], "rrset":msg.answer[0], "data":co}
@@ -200,15 +200,15 @@ END;
 #         if row:
 #             rdclass = row[2]
 #             rdtype = row[3]
-#             zone_name = pyccn.Name (ccnb_buffer = row[0])
+#             zone_name = ndn.Name (ccnb_buffer = row[0])
 #             zone_origin = dns.name.from_text (dnsify (str (zone_name)))
 
 #             label = dns.name.from_text (row[1]).relativize (origin = dns.name.root)
 #         else:
 #             raise Error ("Non-existing RR set")
             
-#         key = pyccn.Key.getDefaultKey ()
-#         keyLocator = pyccn.KeyLocator.getDefaultKeyLocator ()
+#         key = ndn.Key.getDefaultKey ()
+#         keyLocator = ndn.KeyLocator.getDefaultKeyLocator ()
     
 #         rrset = dns.rrset.RRset (label, rdclass, rdtype)
 #         ttl = -1
@@ -217,13 +217,13 @@ END;
 #             if (ttl == -1 or row[0] < ttl):
 #                 ttl = row[0]
 
-#         rrset_name = pyccn.Name (zone_name)
+#         rrset_name = ndn.Name (zone_name)
 #         rrset_name = rrset_name.append ("dns")
 #         if (len (label) > 0):
 #             rrset_name = rrset_name.append (label.to_text ())
 #         rrset_name = rrset_name.append (dns.rdatatype.to_text (rdtype))
         
-#         signedInfo = pyccn.SignedInfo (key_digest = key.publicKeyID, key_locator = keyLocator, 
+#         signedInfo = ndn.SignedInfo (key_digest = key.publicKeyID, key_locator = keyLocator, 
 #                                        freshness = ttl)
 #         # , py_timestamp = time.mktime (time.gmtime()))
     
@@ -231,7 +231,7 @@ END;
 #         # msg.origin = zone_origin
 #         msg.answer.append (rrset)
 
-#         co = pyccn.ContentObject (name = rrset_name, signed_info = signedInfo, content = msg.to_wire (origin = zone_origin))
+#         co = ndn.ContentObject (name = rrset_name, signed_info = signedInfo, content = msg.to_wire (origin = zone_origin))
 
 #         # print zone_origin
 #         # print msg.to_wire ()

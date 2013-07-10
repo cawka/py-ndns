@@ -20,7 +20,7 @@ import dns.rdtypes.IN.NDNCERT
 import dns.rdataclass, dns.rdatatype
 import dns.zone
 import os, glob, re, time, struct
-import pyccn
+import ndn
 
 ######################################################################
 ######################################################################
@@ -55,7 +55,7 @@ if( __name__ == '__main__' ):
         exit (1)
 
     try:
-        zone_ndn = pyccn.Name (args.zone)
+        zone_ndn = ndn.Name (args.zone)
         zone_dns = ndns.dnsify (args.zone)
     except NameError as e:
         sys.stderr.write ("ERROR: %s\n\n" % e)
@@ -72,7 +72,7 @@ if( __name__ == '__main__' ):
         
     if args.key:
         try:
-            key = _dyndns.query (dyndns.Key).with_parent (zone).filter (dyndns.Key.has_name (pyccn.Name (args.key))).first ()
+            key = _dyndns.query (dyndns.Key).with_parent (zone).filter (dyndns.Key.has_name (ndn.Name (args.key))).first ()
         except:
             sys.stderr.write ("ERROR: Not valid or non-existing key [%s]\n" % args.key)
             exit (1)
@@ -96,7 +96,7 @@ if( __name__ == '__main__' ):
     else:
         zonefile = dns.zone.from_file (sys.stdin, origin = origin, check_origin = False)
     
-    query = pyccn.Name (zone.name).append ("DNS")
+    query = ndn.Name (zone.name).append ("DNS")
 
     default_rtt = 3600
     for (name, ttl, rdata) in zonefile.iterate_rdatas ():
@@ -118,7 +118,7 @@ if( __name__ == '__main__' ):
 
     query = query.append ("NDNUPDATE")
 
-    ndn = pyccn.CCN ()
+    ndn = ndn.CCN ()
     ndn.defer_verification ()
 
     result = ndn.get (query)

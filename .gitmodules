@@ -1,6 +1,6 @@
-[submodule "contrib/PyCCN"]
-	path = contrib/PyCCN
-	url = git://github.com/cawka/PyCCN.git
+[submodule "contrib/py-ndn"]
+	path = contrib/py-ndn
+	url = git://github.com/cawka/py-ndn.git
 [submodule "contrib/dnspython"]
 	path = contrib/dnspython
 	url = git://github.com/cawka/dnspython.git

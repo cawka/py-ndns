@@ -2,7 +2,8 @@
 *.pyo
 *.pyc
 var/*.db
-lib/pyccn
+lib/ndn
+lib/dns
 .svn
 *.bak
 *.bak~*

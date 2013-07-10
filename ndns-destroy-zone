@@ -12,7 +12,7 @@
 # make sure modules from lib/ are loaded
 import sys; sys.path = ["%s/lib" % sys.path[0]] + sys.path
 
-import argparse, pyccn, ndns, os
+import argparse, ndn, ndns, os
 
 ######################################################################
 ######################################################################
@@ -37,7 +37,7 @@ if( __name__ == '__main__' ):
     _ndns = ndns.ndns_session ()
 
     try:
-        zone_ndn = pyccn.Name (args.zone)
+        zone_ndn = ndn.Name (args.zone)
         zone_dns = ndns.dnsify (args.zone)
     except NameError as e:
         sys.stderr.write ("ERROR: %s\n\n" % e)

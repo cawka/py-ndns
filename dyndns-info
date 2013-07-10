@@ -19,7 +19,7 @@ import ndns.query
 import dns.rdtypes.IN.NDNCERT
 import dns.rdataclass, dns.rdatatype
 import glob, re
-import pyccn
+import ndn
 
 ######################################################################
 ######################################################################

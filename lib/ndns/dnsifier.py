@@ -9,7 +9,7 @@
 # Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
 # 
 
-import pyccn
+import ndn
 
 def __clean (name):
     """
@@ -52,7 +52,7 @@ def dnsify (ndnName, ltrim = 0, rtrim = 0, invert = False):
 
 
 def ndnify (dnsName):
-    ndnName = pyccn.Name ()
+    ndnName = ndn.Name ()
     for component in reversed (dnsName.split (".")):
         ndnName = ndnName.append (str (component))
 

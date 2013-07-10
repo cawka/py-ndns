@@ -19,7 +19,7 @@ import dns.rdata
 import dns.rrset
 import dns.rdtypes.IN.NDNCERT
 import ndns
-import pyccn
+import ndn
 
 ######################################################################
 ######################################################################
@@ -53,7 +53,7 @@ if( __name__ == '__main__' ):
     _ndns = ndns.ndns_session ()
 
     try:
-        zone_ndn = pyccn.Name (args.zone)
+        zone_ndn = ndn.Name (args.zone)
         zone_dns = ndns.dnsify (args.zone)
     except NameError as e:
         sys.stderr.write ("ERROR: %s\n\n" % e)
@@ -84,14 +84,14 @@ if( __name__ == '__main__' ):
         ksk.load_default_key ()
         zone.keys.append (ksk)
     else:
-        ksk_name = pyccn.Name (zone_ndn[:-1]).append ("DNS")
+        ksk_name = ndn.Name (zone_ndn[:-1]).append ("DNS")
         for component in ndns.ndnify (zone_ndn[-1]):
             ksk_name = ksk_name.append (component)
         ksk_name = ksk_name.append ("ksk-%d" % int (time.time ())).append ("NDNCERT")
 
         ksk = ndns.Key (key_type = "KSK",
                         name = ksk_name,
-                        parent_zone = pyccn.Name (zone_ndn[:-1]))
+                        parent_zone = ndn.Name (zone_ndn[:-1]))
         ksk.generate (_ndns.keydir)
         zone.keys.append (ksk)
 

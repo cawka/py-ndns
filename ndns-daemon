@@ -19,7 +19,7 @@ import os, functools, signal, daemon
 
 #install from contrib/
 import setproctitle
-import pyccn
+import ndn
 import dns.rdataclass, dns.rdatatype, dns.rdata, dns.rrset, dns.zone
 from multiprocessing.pool import ThreadPool
 
@@ -84,12 +84,12 @@ class NdnsDaemon:
 
         self._ndns = ndns.ndns_session ()
         self._scopes = self._ndns.scopes
-        self._face = pyccn.CCN ()
+        self._face = ndn.CCN ()
 
         self._startZoneServing ()
 
         self._threadPool = ThreadPool (processes = 1)
-        self._eventLoop = pyccn.EventLoop (self._face)
+        self._eventLoop = ndn.EventLoop (self._face)
         self._eventLoop.run ()
 
         _LOG.info ('Daemon stopped')
@@ -121,7 +121,7 @@ class NdnsDaemon:
         name = zone.name
 
         self._face.setInterestFilterSimple (name.append ("DNS"),
-                                            functools.partial (self._onRequest, pyccn.Name (), zone))
+                                            functools.partial (self._onRequest, ndn.Name (), zone))
 
         activeScopes = []
         for scope in self._scopes + self._autoScope:
@@ -159,9 +159,9 @@ class NdnsDaemon:
 
         if interest.name[-1] == "NDNUPDATE":
             self._threadPool.apply_async (self._processDyNDNS, (zone, basename, interest, ))
-            return pyccn.RESULT_OK
+            return ndn.RESULT_OK
 
-        dataPacket = self._getRequestedData (zone, pyccn.Name (basename [len(scope):]), pyccn.Name (interest.name [len(scope):]))
+        dataPacket = self._getRequestedData (zone, ndn.Name (basename [len(scope):]), ndn.Name (interest.name [len(scope):]))
         if dataPacket:
             if len (scope) == 0:
                 self._face.put (dataPacket)
@@ -175,14 +175,14 @@ class NdnsDaemon:
                 _LOG.debug ("Encapsulating into [%s]" % encapPacket.name)
                 self._face.put (encapPacket)
 
-        return pyccn.RESULT_OK
+        return ndn.RESULT_OK
 
     def _getRequestedData (self, zone, basename, interestName):
         _LOG.debug (">> REAL: basename [%s], interest [%s]" % (basename, interestName))
 
         if interestName[-1][0] == '\xFD':
             # allow version to be specified, but ignore it for the database lookup
-            request_name = pyccn.Name (interestName[:-1])
+            request_name = ndn.Name (interestName[:-1])
         else:
             request_name = interestName
 
@@ -193,7 +193,7 @@ class NdnsDaemon:
             return None
 
         try:
-            label = dns.name.from_text (ndns.dnsify (str (pyccn.Name (request_name[len(basename):-1])))).relativize (origin = dns.name.root)
+            label = dns.name.from_text (ndns.dnsify (str (ndn.Name (request_name[len(basename):-1])))).relativize (origin = dns.name.root)
         except Exception, e:
             _LOG.debug ("Invalid request: label [%s] cannot be dnsified (%s)" % (request_name[len(basename):-1], e))
             return None
@@ -257,7 +257,7 @@ class NdnsDaemon:
 
         for update in interest.name[len(basename):-1]:
             try:
-                dataPacket = pyccn.ContentObject.from_ccnb (update)
+                dataPacket = ndn.ContentObject.from_ccnb (update)
                 _LOG.debug ("Processing %s" % dataPacket.name)
                 
                 if dataPacket.name[:len(basename)] != basename[:]:
@@ -268,8 +268,8 @@ class NdnsDaemon:
                     _LOG.warn ("Data [%s] packet cannot be verified" % dataPacket.name)
                     continue
 
-                seqno = pyccn.Name ().append (dataPacket.name[-1])
-                label = dns.name.from_text (ndns.dnsify (str (pyccn.Name (dataPacket.name[len(basename):-2])))).relativize (origin = dns.name.root)
+                seqno = ndn.Name ().append (dataPacket.name[-1])
+                label = dns.name.from_text (ndns.dnsify (str (ndn.Name (dataPacket.name[len(basename):-2])))).relativize (origin = dns.name.root)
                 rtype = dataPacket.name[-2]
 
                 if not self._authorizeKey (session, zone, basename, dataPacket.signedInfo.keyLocator.keyName, seqno):
@@ -345,7 +345,7 @@ class NdnsDaemon:
         if (keyName[-1] != "NDNCERT"):
             return False
 
-        key_label = dns.name.from_text (ndns.dnsify (str (pyccn.Name (keyName[len(basename):-1])))).\
+        key_label = dns.name.from_text (ndns.dnsify (str (ndn.Name (keyName[len(basename):-1])))).\
             relativize (origin = dns.name.root)
 
         key = session.query (ndns.RRSet).with_parent (zone).filter_by (label = key_label.to_text (), rtype = dns.rdatatype.NDNCERT).first ()
@@ -357,7 +357,7 @@ class NdnsDaemon:
         
         if not current_key_seq:
             current_key_seq = ndns.RRSet (label = key_label.to_text (), zone = zone, rclass = dns.rdataclass.IN, rtype = dns.rdatatype.NDNCERTSEQ)
-            rd = dns.rdtypes.IN.NDNCERTSEQ.NDNCERTSEQ (rdclass = dns.rdataclass.IN, rdtype = dns.rdatatype.NDNCERTSEQ, seq = pyccn.Name ())
+            rd = dns.rdtypes.IN.NDNCERTSEQ.NDNCERTSEQ (rdclass = dns.rdataclass.IN, rdtype = dns.rdatatype.NDNCERTSEQ, seq = ndn.Name ())
             rr = ndns.RR (ttl = 0, rrdata = rd, rrset = current_key_seq)
 
         if current_key_seq.rrs[0].dns_rrdata.seq >= seqno:
@@ -393,7 +393,7 @@ if( __name__ == '__main__' ):
 
     with context:
         if args.prefix_discovery:
-            discovery = pyccn.LocalPrefixDiscovery (periodicity = 300)
+            discovery = ndn.LocalPrefixDiscovery (periodicity = 300)
             discovery.subscribe ("ndns", ndns_daemon.updateLocalPrefix)
 
         ndns_daemon.run ()

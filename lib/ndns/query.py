@@ -21,7 +21,7 @@ import ndns
 import re
 import random
 import logging
-import pyccn
+import ndn
 import time
 
 _LOG = logging.getLogger ("ndns.query")
@@ -53,11 +53,11 @@ class SimpleQuery:
         _LOG.debug ("SimpleQuery.get_raw: query: %s, hint: %s" % (query, hint))
 
         if not ndn:
-            ndn = pyccn.CCN ()
+            ndn = ndn.Face ()
             ndn.defer_verification ()
 
         if hint and not hint.isPrefixOf (query):
-            query = pyccn.Name (hint).append ("\xF0.").append (query)
+            query = ndn.Name (hint).append ("\xF0.").append (query)
         else:
             hint = None
 
@@ -68,7 +68,7 @@ class SimpleQuery:
 
         if hint:
             # don't verify the outer part, it cannot be verified for now anyways
-            result = pyccn.ContentObject.from_ccnb (result.content)
+            result = ndn.ContentObject.from_ccnb (result.content)
 
         if not ndns.TrustPolicy.verify (result):
             raise QueryAnswerNotTrusted (result)
@@ -117,18 +117,18 @@ class IterativeQuery:
     def _getMostSpecificAnswer (zone, hint, name_iter, rtype, tryEmptyLabel, ndn):
         result = None
         msg = None
-        label_real = pyccn.Name ()
-        label_logical = pyccn.Name ()
+        label_real = ndn.Name ()
+        label_logical = ndn.Name ()
         
         try:
             if tryEmptyLabel:
-                label_logical = pyccn.Name ()
-                label_real = pyccn.Name ()
+                label_logical = ndn.Name ()
+                label_real = ndn.Name ()
             else:
                 component = name_iter.next ()
 
-                label_logical = pyccn.Name ().append (ndnify (component))
-                label_real = pyccn.Name ().append (component)
+                label_logical = ndn.Name ().append (ndnify (component))
+                label_real = ndn.Name ().append (component)
 
             [result, msg] = ndns.CachingQueryObj.get_simple (zone, hint, label_logical, rtype, True, ndn)
             while (len(msg.answer)==0 and len(msg.authority)==1 and msg.authority[0].rdtype == dns.rdatatype.NDNAUTH):
@@ -161,15 +161,16 @@ class IterativeQuery:
 
         _LOG.debug ("IterativeQuery: name: %s, type: %s" % (name, dns.rdatatype.to_text (rrtype)))
 
-        zone = pyccn.Name ()
+        zone = ndn.Name ()
         hint = None
+        [fh_result, fh_msg] = [None, None]
 
         if not ndn:
-            ndn = pyccn.CCN ()
+            ndn = ndn.Face ()
             ndn.defer_verification ()
         
         try:
-            label_real = pyccn.Name ()
+            label_real = ndn.Name ()
             name_iter = iter(name)
             while True:
                 # _LOG.debug ("IterativeQuery: hint: %s, zone: %s" % (hint, zone))
@@ -187,14 +188,14 @@ class IterativeQuery:
                 dns_ns_target = ns_rrdata.target
                 
                 if dns_ns_target.is_subdomain (dns_zone):
-                    ns_label = pyccn.Name (ndnify (dns_ns_target.relativize (dns_zone).to_text ()))
+                    ns_label = ndn.Name (ndnify (dns_ns_target.relativize (dns_zone).to_text ()))
                     [fh_result, fh_msg] = ndns.CachingQueryObj.get_simple (zone, hint, ns_label, dns.rdatatype.FH, True, ndn)
                 else:
-                    ns_target = pyccn.Name (ndnify (dns_ns_target.relativize (dns.name.root).to_text ()))
+                    ns_target = ndn.Name (ndnify (dns_ns_target.relativize (dns.name.root).to_text ()))
                     [fh_result, fh_msg] = IterativeQuery.get (ns_target, dns.rdatatype.FH, True, ndn)
                 
                 # if zone.isPrefixOf (ns_target):
-                #     fh_label = pyccn.Name (ns_target[len(zone):])
+                #     fh_label = ndn.Name (ns_target[len(zone):])
                 #     [fh_result, fh_msg] = ndns.CachingQueryObj.get_simple (zone, hint, fh_label, dns.rdatatype.FH, True, ndn)
                 # else:
                 #     [fh_result, fh_msg] = IterativeQuery.get (ns_target, dns.rdatatype.FH, True, ndn)
@@ -206,7 +207,7 @@ class IterativeQuery:
                 hint = fh_rrdata.hint
 
                 zone = zone.append (label_real)
-                label_real = pyccn.Name ()
+                label_real = ndn.Name ()
 
         except QueryNoValidAnswer, e:
             label_real = e.label_real
@@ -296,7 +297,7 @@ class CachingQuery:
         else:
             rrtype = dns.rdatatype.to_text (rrtype)
 
-        query = pyccn.Name (zone).append ("DNS")
+        query = ndn.Name (zone).append ("DNS")
         if len(label) > 0:
             query = query.append (label)
         query = query.append (rrtype)

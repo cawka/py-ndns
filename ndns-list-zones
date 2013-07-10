@@ -18,7 +18,7 @@ import dns.rdatatype
 import dns.rdata
 import dns.rrset
 import ndns
-import pyccn
+import ndn
 
 ######################################################################
 ######################################################################

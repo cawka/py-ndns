@@ -9,7 +9,7 @@
 # Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
 # 
 
-import pyccn
+import ndn
 
 from sqlalchemy import Table, MetaData, Column, ForeignKey, Integer, String, Binary, UniqueConstraint, event
 from sqlalchemy.orm import relationship, backref
@@ -39,7 +39,7 @@ class RRSet (Base):
 
     @property
     def ndndata (self):   
-        return pyccn.ContentObject.from_ccnb (self._ndndata)
+        return ndn.ContentObject.from_ccnb (self._ndndata)
 
     @ndndata.setter
     def ndndata (self, value):

@@ -21,7 +21,7 @@ import dns.rdataclass, dns.rdatatype
 import dns.zone
 import dns.update
 import os, glob, re, time, struct
-import pyccn
+import ndn
 
 ######################################################################
 ######################################################################
@@ -57,7 +57,7 @@ if( __name__ == '__main__' ):
         exit (1)
 
     try:
-        zone_ndn = pyccn.Name (args.zone)
+        zone_ndn = ndn.Name (args.zone)
         zone_dns = ndns.dnsify (args.zone)
     except NameError as e:
         sys.stderr.write ("ERROR: %s\n\n" % e)
@@ -74,7 +74,7 @@ if( __name__ == '__main__' ):
         
     if args.key:
         try:
-            key = _dyndns.query (dyndns.Key).with_parent (zone).filter (dyndns.Key.has_name (pyccn.Name (args.key))).first ()
+            key = _dyndns.query (dyndns.Key).with_parent (zone).filter (dyndns.Key.has_name (ndn.Name (args.key))).first ()
         except:
             sys.stderr.write ("ERROR: Not valid or non-existing key [%s]\n" % args.key)
             exit (1)
@@ -92,7 +92,7 @@ if( __name__ == '__main__' ):
     #     sys.stderr.write ("ERROR: authoritative server is not responding or not trusted\n")
     #     exit (1)
 
-    rmDataName = pyccn.Name (zone.name).append ("DNS")
+    rmDataName = ndn.Name (zone.name).append ("DNS")
 
     label = dns.name.from_text (args.label).relativize (dns.name.root)
     if (len (label) > 0):
@@ -110,11 +110,11 @@ if( __name__ == '__main__' ):
 
     dataPacket = ndns.createSignedData (_dyndns, rmDataName, wire, None, key)
 
-    updateQueryName = pyccn.Name (zone.name).append ("DNS")
+    updateQueryName = ndn.Name (zone.name).append ("DNS")
     updateQueryName = updateQueryName.append (dataPacket.get_ccnb ())
     updateQueryName = updateQueryName.append ("NDNUPDATE")
     
-    ndn = pyccn.CCN ()
+    ndn = ndn.CCN ()
     ndn.defer_verification ()
 
     result = ndn.get (updateQueryName)

@@ -9,7 +9,7 @@
 # Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
 # 
 
-import pyccn
+import ndn
 
 from sqlalchemy import Table, MetaData, Column, ForeignKey, Integer, Binary, Enum, UniqueConstraint
 from sqlalchemy.orm import relationship, backref
@@ -44,12 +44,12 @@ class Key (Base):
 
     @property
     def name (self):
-        return pyccn.Name (ccnb_buffer = self._name)
+        return ndn.Name (ccnb_buffer = self._name)
 
     @property
     def parent_zone (self):
         if self._parent_zone:
-            return pyccn.Name (ccnb_buffer = self._parent_zone)
+            return ndn.Name (ccnb_buffer = self._parent_zone)
         else:
             return None
 
@@ -57,7 +57,7 @@ class Key (Base):
     def label (self):
         name = self.name
         if name[:len(self.zone.name)] == self.zone.name:
-            return dnsify (str (pyccn.Name (name[len(self.zone.name) + 1 : -1])))
+            return dnsify (str (ndn.Name (name[len(self.zone.name) + 1 : -1])))
         else:
             raise KeyException ("Key does not belong to the zone (KSK should be stored in the parent zone!)")
 
@@ -65,7 +65,7 @@ class Key (Base):
     def ndn_label (self):
         name = self.name
         if name[:len(self.zone.name)] == self.zone.name:
-            return pyccn.Name (name[len(self.zone.name) + 1 : -1])
+            return ndn.Name (name[len(self.zone.name) + 1 : -1])
         else:
             raise KeyException ("Key does not belong to the zone (KSK should be stored in the parent zone!)")
 
@@ -79,13 +79,13 @@ class Key (Base):
 
         name = self.name
         if name[:len(self.parent_zone)] == self.parent_zone:
-            return dnsify (str (pyccn.Name (name[len(self.parent_zone) + 1 : -1])))
+            return dnsify (str (ndn.Name (name[len(self.parent_zone) + 1 : -1])))
         else:
             raise KeyException ("Key does not belong to the parent zone")
         
     @property
     def local_key_id (self):
-        return dnsify (str (pyccn.Name (self.name[:-1])), invert = True)
+        return dnsify (str (ndn.Name (self.name[:-1])), invert = True)
 
     @hybrid_method
     def has_name (self, other):
@@ -102,7 +102,7 @@ class Key (Base):
     def generate (self, keydir, password = None):
         '''Generate key pair on disk'''
 
-        self._key = pyccn.Key ()
+        self._key = ndn.Key ()
         self._key.generateRSA (2048 if self.key_type == "KSK" else 1024)
 
         if not os.path.exists (keydir):
@@ -130,27 +130,27 @@ class Key (Base):
             pass
 
     def load_default_key (self):
-        self._key = pyccn.Key.getDefaultKey ()
-        self.name = pyccn.KeyLocator.getDefaultKeyLocator ().keyName
+        self._key = ndn.Key.getDefaultKey ()
+        self.name = ndn.KeyLocator.getDefaultKeyLocator ().keyName
         
     def load_from_pubkey (self, pubkey):
-        self._key = pyccn.Key ()
+        self._key = ndn.Key ()
         self._key.fromPEM (pubkey)
 
     @property
     def key_locator (self):
-        return pyccn.KeyLocator (self.name)
+        return ndn.KeyLocator (self.name)
 
     def private_key (self, keydir, password = None):
         if not self._key:
-            self._key = pyccn.Key ()
+            self._key = ndn.Key ()
             self._key.fromPEM ("%s/%s.pri" % (keydir, self.local_key_id), password = password)
 
         return self._key
 
     def public_key (self, keydir):
         if not self._key:
-            key = pyccn.Key ()
+            key = ndn.Key ()
             key.fromPEM ("%s/%s.pub" % (keydir, self.local_key_id))
             return key
 

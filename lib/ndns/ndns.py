@@ -30,9 +30,9 @@ import dns.rrset
 import dns.zone
 
 TrustPolicy = IdentityPolicy (
-    anchors = [[pyccn.Name ("/ndn/keys/ucla.edu/alex/%C1.M.K%00F%8D%E9%C3%EE4%7F%C1Mjqro%C6L%8DGV%91%90%03%24%ECt%95n%F3%9E%A6i%F1%C9"), 
-                pyccn.Name ("/"),
-                pyccn.Key.createFromPEM (public = """-----BEGIN PUBLIC KEY-----
+    anchors = [[ndn.Name ("/ndn/keys/ucla.edu/alex/%C1.M.K%00F%8D%E9%C3%EE4%7F%C1Mjqro%C6L%8DGV%91%90%03%24%ECt%95n%F3%9E%A6i%F1%C9"), 
+                ndn.Name ("/"),
+                ndn.Key.createFromPEM (public = """-----BEGIN PUBLIC KEY-----
 MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDSPdPM7+DjDcUGHtwEDmkq4kO5
 tEUI05w5gR4JC1UiZxS0ckMWSLRPWXozHrpJsjNzDeI6OiQrXzup1tF2IN+Xtdr+
 Pr3CwyBRloTJJbm5kf+pGuJh4fE9Qk0i/fS9Xs6gFup3oPnr+wFFjJObnRTrUsaM
@@ -50,7 +50,7 @@ def ndns_session (config = "etc/ndns.conf"):
     conf = iscpy.ParseISCString (open (config).read ())
     zonedb = conf['options']['zonedb'].strip ("\"'")
     keydir = conf['options']['keydir'].strip ("\"'")
-    scopes = [pyccn.Name (scope.strip ("\"'")) for scope in conf['options']['scopes'].keys ()]
+    scopes = [ndn.Name (scope.strip ("\"'")) for scope in conf['options']['scopes'].keys ()]
 
     db = create_engine ('sqlite:///%s' % zonedb)
     # db.echo = True
@@ -63,14 +63,14 @@ def ndns_session (config = "etc/ndns.conf"):
     session.scopes = scopes
     return session
 
-def createSignedData (session, name, content, freshness, key, type = pyccn.CONTENT_DATA):
+def createSignedData (session, name, content, freshness, key, type = ndn.CONTENT_DATA):
     signingKey = key.private_key (session.keydir)
-    signedInfo = pyccn.SignedInfo (key_digest = signingKey.publicKeyID, key_locator = key.key_locator, 
+    signedInfo = ndn.SignedInfo (key_digest = signingKey.publicKeyID, key_locator = key.key_locator, 
                                    freshness = freshness,
                                    type = type)
     # , py_timestamp = time.mktime (time.gmtime()))
 
-    co = pyccn.ContentObject (name = name, signed_info = signedInfo, content = content)
+    co = ndn.ContentObject (name = name, signed_info = signedInfo, content = content)
 
     co.sign (signingKey)
     return co
@@ -109,7 +109,7 @@ def createSignedRRsetData (session, rrset, key, version = None):
         else:
             ttl = 3600
     
-    rrset_name = pyccn.Name (zone_name)
+    rrset_name = ndn.Name (zone_name)
     rrset_name = rrset_name.append ("DNS")
     if (len (label) > 0):
         ndn_label = ndnify (label.to_text ())
@@ -118,7 +118,7 @@ def createSignedRRsetData (session, rrset, key, version = None):
     rrset_name = rrset_name.append (dns.rdatatype.to_text (rdtype))
     rrset_name = rrset_name.appendVersion (version)
 
-    return createSignedData (session, rrset_name, content, ttl, key, type = pyccn.CONTENT_DATA if rdtype != dns.rdatatype.NDNCERT else pyccn.CONTENT_KEY)    
+    return createSignedData (session, rrset_name, content, ttl, key, type = ndn.CONTENT_DATA if rdtype != dns.rdatatype.NDNCERT else ndn.CONTENT_KEY)    
 
 def add_rr (session, zone, origin, name, ttl, rdata):
     # print "Create record: '%s %s %d %s'" % (name, dns.rdatatype.to_text (rdata.rdtype), ttl, rdata.to_text ())
