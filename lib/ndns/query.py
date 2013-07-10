@@ -47,21 +47,21 @@ class SimpleQuery:
     specify the authority zone, forwarding hint, label, and resource record type"""
 
     @staticmethod
-    def get_raw (query, zone = None, hint = None, label = None, rrtype = None, parse_dns = True, ndn = None):
+    def get_raw (query, zone = None, hint = None, label = None, rrtype = None, parse_dns = True, face = None):
         """If zone, label, or rrtype is None, then they will be guessed from the query"""
 
         _LOG.debug ("SimpleQuery.get_raw: query: %s, hint: %s" % (query, hint))
 
-        if not ndn:
-            ndn = ndn.Face ()
-            ndn.defer_verification ()
+        if not face:
+            face = ndn.Face ()
+            face.defer_verification ()
 
         if hint and not hint.isPrefixOf (query):
             query = ndn.Name (hint).append ("\xF0.").append (query)
         else:
             hint = None
 
-        result = ndn.get (query)
+        result = face.get (query)
     
         if not result:
             raise QueryNoAnswer
@@ -114,7 +114,7 @@ class IterativeQuery:
             yield i
 
     @staticmethod
-    def _getMostSpecificAnswer (zone, hint, name_iter, rtype, tryEmptyLabel, ndn):
+    def _getMostSpecificAnswer (zone, hint, name_iter, rtype, tryEmptyLabel, face):
         result = None
         msg = None
         label_real = ndn.Name ()
@@ -130,14 +130,14 @@ class IterativeQuery:
                 label_logical = ndn.Name ().append (ndnify (component))
                 label_real = ndn.Name ().append (component)
 
-            [result, msg] = ndns.CachingQueryObj.get_simple (zone, hint, label_logical, rtype, True, ndn)
+            [result, msg] = ndns.CachingQueryObj.get_simple (zone, hint, label_logical, rtype, True, face)
             while (len(msg.answer)==0 and len(msg.authority)==1 and msg.authority[0].rdtype == dns.rdatatype.NDNAUTH):
                 component = name_iter.next ()
 
                 label_logical = label_logical.append (ndnify (component))
                 label_real = label_real.append (component)
 
-                [result, msg] = ndns.CachingQueryObj.get_simple (zone, hint, label_logical, rtype, True, ndn)
+                [result, msg] = ndns.CachingQueryObj.get_simple (zone, hint, label_logical, rtype, True, face)
            
             if len(msg.answer) == 0 or msg.answer[0].rdtype != rtype:
                 raise QueryNoValidAnswer (msg, result, label_real)
@@ -152,7 +152,7 @@ class IterativeQuery:
 
 
     @staticmethod
-    def get (name, rrtype = dns.rdatatype.FH, parse_dns = True, ndn = None):
+    def get (name, rrtype = dns.rdatatype.FH, parse_dns = True, face = None):
         if rrtype is None:
             rrtype = dns.rdatatype.FH
 
@@ -165,9 +165,9 @@ class IterativeQuery:
         hint = None
         [fh_result, fh_msg] = [None, None]
 
-        if not ndn:
-            ndn = ndn.Face ()
-            ndn.defer_verification ()
+        if not face:
+            face = ndn.Face ()
+            face.defer_verification ()
         
         try:
             label_real = ndn.Name ()
@@ -177,7 +177,7 @@ class IterativeQuery:
 
                 [ns_result, ns_msg, label_logical, label_real] = \
                     IterativeQuery._getMostSpecificAnswer (zone, hint, name_iter, 
-                                                           dns.rdatatype.NS, tryEmptyLabel = False, ndn = ndn)
+                                                           dns.rdatatype.NS, tryEmptyLabel = False, face = face)
 
                 ns_rrdata = random.choice (ns_msg.answer[0].items)
 
@@ -189,16 +189,16 @@ class IterativeQuery:
                 
                 if dns_ns_target.is_subdomain (dns_zone):
                     ns_label = ndn.Name (ndnify (dns_ns_target.relativize (dns_zone).to_text ()))
-                    [fh_result, fh_msg] = ndns.CachingQueryObj.get_simple (zone, hint, ns_label, dns.rdatatype.FH, True, ndn)
+                    [fh_result, fh_msg] = ndns.CachingQueryObj.get_simple (zone, hint, ns_label, dns.rdatatype.FH, True, face)
                 else:
                     ns_target = ndn.Name (ndnify (dns_ns_target.relativize (dns.name.root).to_text ()))
-                    [fh_result, fh_msg] = IterativeQuery.get (ns_target, dns.rdatatype.FH, True, ndn)
+                    [fh_result, fh_msg] = IterativeQuery.get (ns_target, dns.rdatatype.FH, True, face)
                 
                 # if zone.isPrefixOf (ns_target):
                 #     fh_label = ndn.Name (ns_target[len(zone):])
-                #     [fh_result, fh_msg] = ndns.CachingQueryObj.get_simple (zone, hint, fh_label, dns.rdatatype.FH, True, ndn)
+                #     [fh_result, fh_msg] = ndns.CachingQueryObj.get_simple (zone, hint, fh_label, dns.rdatatype.FH, True, face)
                 # else:
-                #     [fh_result, fh_msg] = IterativeQuery.get (ns_target, dns.rdatatype.FH, True, ndn)
+                #     [fh_result, fh_msg] = IterativeQuery.get (ns_target, dns.rdatatype.FH, True, face)
                     
                 if len(fh_msg.answer) == 0 or fh_msg.answer[0].rdtype != dns.rdatatype.FH:
                     raise QueryNoAnswer ()
@@ -223,7 +223,7 @@ class IterativeQuery:
             elif rrtype == dns.rdatatype.NS and not ns_msg is None and not ns_result is None:
                 return [ns_result, ns_msg]
 
-        [real_result, real_msg] = ndns.CachingQueryObj.get_simple (zone, hint, label_real, rrtype, parse_dns, ndn)
+        [real_result, real_msg] = ndns.CachingQueryObj.get_simple (zone, hint, label_real, rrtype, parse_dns, face)
         return [real_result, real_msg]
 
 class CachingQuery:
@@ -231,7 +231,7 @@ class CachingQuery:
         self.cache = {}
         self.cache_raw = {}
 
-    def get (self, name, rrtype = dns.rdatatype.FH, parse_dns = True, ndn = None):
+    def get (self, name, rrtype = dns.rdatatype.FH, parse_dns = True, face = None):
         if rrtype is None:
             rrtype = dns.rdatatype.FH
 
@@ -271,7 +271,7 @@ class CachingQuery:
 
         return [result, msg]
 
-    def get_raw (self, query, zone = None, hint = None, label = None, rrtype = None, parse_dns = True, ndn = None):
+    def get_raw (self, query, zone = None, hint = None, label = None, rrtype = None, parse_dns = True, face = None):
         key = str (query)
         try:
             [result, msg, ttl] = self.cache_raw [key]
@@ -286,12 +286,12 @@ class CachingQuery:
             pass
 
         # _LOG.debug ("CachingQuery.raw: [%s]" % (query))
-        [result, msg] = SimpleQuery.get_raw (query, zone, hint, label, rrtype, parse_dns, ndn)
+        [result, msg] = SimpleQuery.get_raw (query, zone, hint, label, rrtype, parse_dns, face)
         self.cache_raw[key] = [result, msg, int (time.time ()) + result.signedInfo.freshnessSeconds]
 
         return [result, msg]
 
-    def get_simple (self, zone, hint, label, rrtype, parse_dns = True, ndn = None):
+    def get_simple (self, zone, hint, label, rrtype, parse_dns = True, face = None):
         if isinstance(rrtype, str):
             rrtype = dns.rdatatype.to_text (dns.rdatatype.from_text (rrtype))
         else:
@@ -302,4 +302,4 @@ class CachingQuery:
             query = query.append (label)
         query = query.append (rrtype)
 
-        return self.get_raw (query, zone, hint, label, rrtype, parse_dns, ndn)
+        return self.get_raw (query, zone, hint, label, rrtype, parse_dns, face)

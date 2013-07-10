@@ -84,7 +84,7 @@ class NdnsDaemon:
 
         self._ndns = ndns.ndns_session ()
         self._scopes = self._ndns.scopes
-        self._face = ndn.CCN ()
+        self._face = ndn.Face ()
 
         self._startZoneServing ()
 

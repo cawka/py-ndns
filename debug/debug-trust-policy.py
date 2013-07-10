@@ -40,7 +40,7 @@ Pr3CwyBRloTJJbm5kf+pGuJh4fE9Qk0i/fS9Xs6gFup3oPnr+wFFjJObnRTrUsaM
 
 if( __name__ == '__main__' ):
 
-    ndn = pyccn.CCN ()
+    ndn = ndn.Face ()
     ndn.defer_verification (True)
     co = ndn.get (pyccn.Name ("/ndn/DNS/test/A"))
 

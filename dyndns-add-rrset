@@ -118,10 +118,10 @@ if( __name__ == '__main__' ):
 
     query = query.append ("NDNUPDATE")
 
-    ndn = ndn.CCN ()
-    ndn.defer_verification ()
+    face = ndn.Face ()
+    face.defer_verification ()
 
-    result = ndn.get (query)
+    result = face.get (query)
     if not result or not dyndns.TrustPolicy.verify (result):
         print "NDNS server is not responding or not trusted"
     else:

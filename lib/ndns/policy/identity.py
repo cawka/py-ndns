@@ -27,16 +27,16 @@ class IdentityPolicy:
         self.trustedCacheLimit = 10000
         self.trustedCache = {}
 
-    def verify (self, dataPacket, ndn = None, limit_left = 10):
+    def verify (self, dataPacket, face = None, limit_left = 10):
         if limit_left <= 0:
             return false
 
         if len (self.anchors) == 0:
             return False
 
-        if not ndn:
-            _ndn = ndn.Face ()
-            _ndn.defer_verification (True)
+        if not face:
+            face = ndn.Face ()
+            face.defer_verification (True)
 
         data_name = dataPacket.name
         key_name = dataPacket.signedInfo.keyLocator.keyName
@@ -83,20 +83,20 @@ class IdentityPolicy:
 
             if comp != "DNS":
                 # self._LOG.info ("Key name does not belong to DNS, trying to fetch directly")
-                keyDataPacket = _ndn.get (key_name, timeoutms = 3000)
+                keyDataPacket = face.get (key_name, timeoutms = 3000)
             elif len (zone) == 0:
                 # self._LOG.info ("Key belongs to the root zone, no forwarding hint required")                
                 [keyDataPacket, not_used] = ndns.CachingQueryObj.get_raw (key_name, hint = None, parse_dns = False)
             else:
                 # self._LOG.info ("+++++ Key name belongs to DNS, trying to discover forwarding hint for it")
                 try:
-                    [fh_result, fh_msg] = ndns.CachingQueryObj.get (zone, dns.rdatatype.FH, True, _ndn)
+                    [fh_result, fh_msg] = ndns.CachingQueryObj.get (zone, dns.rdatatype.FH, True, face)
                     hint = random.choice (fh_msg.answer[0].items).hint
                     [keyDataPacket, not_used] = ndns.CachingQueryObj.get_raw (key_name, hint = hint, parse_dns = False)
                     
                 except ndns.query.QueryException:
                     # self._LOG.info ("Cannot find what is the forwarding hint, trying to get directly")
-                    keyDataPacket = _ndn.get (key_name, timeoutms = 3000)
+                    keyDataPacket = face.get (key_name, timeoutms = 3000)
 
             if not keyDataPacket:
                 return False
@@ -109,7 +109,7 @@ class IdentityPolicy:
             
             self._LOG.info ("%s policy OKs [%s] to be signed with [%s]" % ('--' * (11-limit_left), data_name, key_name))
             
-            if not self.verify (keyDataPacket, ndn, limit_left-1):
+            if not self.verify (keyDataPacket, face, limit_left-1):
                 return False
 
             if dataPacket.signedInfo.type == ndn.CONTENT_KEY:
