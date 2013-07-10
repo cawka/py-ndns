@@ -9,3 +9,4 @@ lib/dns
 *.bak~*
 *~*
 lib/setproctitle*
+etc/ndns.conf
