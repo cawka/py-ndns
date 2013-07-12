@@ -10,3 +10,6 @@ lib/dns
 *~*
 lib/setproctitle*
 etc/ndns.conf
+.lock*
+.waf*
+build
