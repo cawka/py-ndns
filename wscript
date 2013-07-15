@@ -2,6 +2,8 @@
 VERSION='0.1'
 APPNAME='ndns'
 
+from waflib import TaskGen, Task, Utils, Logs
+
 def options(opt):
     opt.load('compiler_c python gnu_dirs')
 
@@ -40,9 +42,32 @@ def configure(conf):
     try:
         conf.check_python_module ('setproctitle')
     except:
-        from waflib import Logs
         Logs.warn ("py-setproctitle can be installed from contrib/ folder: (cd contrib/py-setproctitle && sudo python ./setup.py install)")
         raise
 
+    try:
+        conf.check_python_module ('ndn')
+    except:
+        Logs.warn ("PyNDN can be installed from contrib/ folder: (cd contrib/py-ndn && ./waf configure && sudo ./waf install)")
+        raise
+
 def build (bld):
-    pass
+
+    bld (features = "py",
+         source = bld.path.ant_glob(['ndns/**/*.py']),
+         install_from = ".")
+
+    bld (features = "py",
+         source = bld.path.ant_glob(['contrib/iscpy/**/*.py']),
+         install_from = "contrib")
+
+    bld (features = "py",
+         source = bld.path.ant_glob(['contrib/dnspython/dns/**/*.py']),
+         install_from = "contrib/dnspython")
+
+    bld (features = "subst",
+         source = bld.path.ant_glob(['bin/**/*.in']),
+         target = [node.change_ext('', '.in') for node in bld.path.ant_glob(['bin/**/*.in'])],
+         install_path = "${BINDIR}",
+         chmod = 0755,
+        )
