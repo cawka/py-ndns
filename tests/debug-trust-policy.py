@@ -40,8 +40,13 @@ Pr3CwyBRloTJJbm5kf+pGuJh4fE9Qk0i/fS9Xs6gFup3oPnr+wFFjJObnRTrUsaM
 
 if( __name__ == '__main__' ):
 
-    ndn = ndn.Face ()
-    ndn.defer_verification (True)
-    co = ndn.get (pyccn.Name ("/ndn/DNS/test/A"))
+    face = ndn.Face ()
+    face.defer_verification (True)
 
-    print TrustPolicy.verify (co)
+    def onVerify (data, status):
+        print status
+
+    def onData (interest, data):
+        TrustPolicy.verify (data, onVerify)
+    
+    face.expressInterest ("/ndn/DNS/test/A", onData)

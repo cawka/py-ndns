@@ -84,45 +84,59 @@ _LOG.addHandler (_handler)
 if( __name__ == '__main__' ):
     zone = ndn.Name (args.zone)
 
-    if args.simple:
-        if args.name:
-            if not args.ndn:
-                args.name = ndns.ndnify (args.name)
-            name = ndn.Name (args.name)
-        elif not args.raw:
-            sys.stderr.write ("ERROR: For simple query, ``name'' (label) argument is mandatory\n")
-            exit (5)
+    # if args.simple:
+    #     if args.name:
+    #         if not args.ndn:
+    #             args.name = ndns.ndnify (args.name)
+    #         name = ndn.Name (args.name)
+    #     elif not args.raw:
+    #         sys.stderr.write ("ERROR: For simple query, ``name'' (label) argument is mandatory\n")
+    #         exit (5)
 
-    try:
-        if args.simple:
-            if not args.raw:
-                result, msg = ndns.CachingQueryObj.get_simple (zone, args.fh, name, args.rrtype)
-            else:
-                result, msg = ndns.CachingQueryObj.get_raw (zone, hint = args.fh)
+    def onResult (result, msg):
+        if not args.quiet:
+            print ";; Got data packet [%s]" % result.name
+            print ";;       signed by [%s]" % result.signedInfo.keyLocator.keyName
+            print ""
+            print msg.to_text ()
         else:
-            args.rrtype = args.name
-            result, msg = ndns.CachingQueryObj.get (zone, args.rrtype)
+            for rrset in msg.answer:
+                print rrset.to_text ()
 
-    except dns.rdatatype.UnknownRdatatype:
-        sys.stderr.write ("Requested an unrecognized RR type [%s] to query\n" % args.rrtype)
-        exit (1)
-    except ndns.QueryNoAnswer:
-        print ";; Got no answer"
-        exit (2)
-    except ndns.QueryAnswerNotTrusted:
-        print ";; Got answer, but result is not trusted"
-        exit (3)
-    except ndns.query.QueryNoValidAnswer, e:
-        print ";; Got no valid answer"
-        if not e.msg is None:
-            print e.msg.to_text ()
-        exit (4)
+        loop.stop ()
 
-    if not args.quiet:
-        print ";; Got data packet [%s]" % result.name
-        print ";;       signed by [%s]" % result.signedInfo.keyLocator.keyName
-        print ""
-        print msg.to_text ()
-    else:
-        for rrset in msg.answer:
-            print rrset.to_text ()
+    def onError (errmsg, *k, **kw):
+        print ";; %s" % errmsg
+        loop.stop ()
+
+    face = ndn.Face ()
+    ndns.query.SimpleQuery.expressQueryForRaw (face, zone, onResult, onError)
+
+    loop = ndn.EventLoop (face)
+    loop.run ()
+
+    # try:
+    #     if args.simple:
+    #         if not args.raw:
+    #             result, msg = ndns.CachingQueryObj.get_simple (zone, args.fh, name, args.rrtype)
+    #         else:
+    #             result, msg = ndns.CachingQueryObj.get_raw (zone, hint = args.fh)
+    #     else:
+    #         args.rrtype = args.name
+    #         result, msg = ndns.CachingQueryObj.get (zone, args.rrtype)
+
+    # except dns.rdatatype.UnknownRdatatype:
+    #     sys.stderr.write ("Requested an unrecognized RR type [%s] to query\n" % args.rrtype)
+    #     exit (1)
+    # except ndns.QueryNoAnswer:
+    #     print ";; Got no answer"
+    #     exit (2)
+    # except ndns.QueryAnswerNotTrusted:
+    #     print ";; Got answer, but result is not trusted"
+    #     exit (3)
+    # except ndns.query.QueryNoValidAnswer, e:
+    #     print ";; Got no valid answer"
+    #     if not e.msg is None:
+    #         print e.msg.to_text ()
+    #     exit (4)
+

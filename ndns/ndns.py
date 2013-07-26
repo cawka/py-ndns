@@ -44,7 +44,7 @@ Pr3CwyBRloTJJbm5kf+pGuJh4fE9Qk0i/fS9Xs6gFup3oPnr+wFFjJObnRTrUsaM
              ["^((/[^/]+)*)/DNS((/[^/]+)*)/[^/]+/NDNCERT$", "\\1\\3", "(.*)", "\\1"]]
     )
 
-CachingQueryObj = query.CachingQuery ()
+# CachingQueryObj = query.CachingQuery ()
 
 def ndns_session (config = "etc/ndns.conf"):
     conf = iscpy.ParseISCString (open (config).read ())

@@ -28,12 +28,18 @@ class IdentityPolicy:
         self.trustedCacheLimit = 10000
         self.trustedCache = {}
 
-    def verify (self, dataPacket, face = None, limit_left = 10):
+    def verifyAsync (self, face, dataPacket, onVerify, limit_left = 10):
+        """
+        onVerify: callback <void, dataPacket, status>
+        """
+
         if limit_left <= 0:
-            return false
+            onVerify (dataPacket, False)
+            return
 
         if len (self.anchors) == 0:
-            return False
+            onVerify (dataPacket, False)
+            return
 
         if not face:
             face = ndn.Face ()
@@ -48,8 +54,8 @@ class IdentityPolicy:
                 del self.trustedCache[str(data_name)]
                 raise KeyError ()
 
-            # self._LOG.info ("%s data [%s] (key) already verified" % ('--' * (11-limit_left), data_name))
-            return True
+            onVerify (dataPacket, True)
+            return
         except KeyError:
             pass
 
@@ -62,10 +68,12 @@ class IdentityPolicy:
                 self._LOG.info ("%s anchor OKs [%s] (**[%s]**)" % ('--' * (11-limit_left), data_name, key_name))
             else:
                 self._LOG.info ("%s anchor FAILs [%s]" % ('--' * (11-limit_left), data_name))
-            return verified
+            onVerify (dataPacket, verified)
+            return
 
         if not self.authorize_by_rule (data_name, key_name):
-            return False
+            onVerify (dataPacket, False)
+            return
 
         try:
             [key, ttl] = self.trustedCache[str(key_name)]
@@ -74,7 +82,9 @@ class IdentityPolicy:
                 raise KeyError ()
 
             self._LOG.info ("%s Using cached trusted version of key [%s]" % ('--' * (11-limit_left), key_name))
-            return dataPacket.verify_signature (key)
+
+            onVerify (dataPacket, dataPacket.verify_signature (key))
+            return
         except KeyError:
             zone = ndn.Name ()
             for comp in key_name:
@@ -82,44 +92,23 @@ class IdentityPolicy:
                     break
                 zone = zone.append (comp)
 
+            nextLevelProcessor = NextLevelProcessor (self, face, dataPacket, onVerify)
+
             if comp != "DNS":
-                # self._LOG.info ("Key name does not belong to DNS, trying to fetch directly")
-                keyDataPacket = face.get (key_name, timeoutms = 3000)
+                face.expressInterestSimple (key_name, nextLevelProcessor.onData, nextLevelProcessor.onTimeout)
             elif len (zone) == 0:
-                # self._LOG.info ("Key belongs to the root zone, no forwarding hint required")                
-                [keyDataPacket, not_used] = ndns.CachingQueryObj.get_raw (key_name, hint = None, parse_dns = False)
+                keyResolver = KeyResolver (nextLevelProcessor)
+                ndns.CachingQueryObj.expressQueryForRaw (key_name, face, 
+                                                         keyResolver.onKeyData, nextLevelProcessor.onError, nextLevelProcessor.onTimeout,
+                                                         hint = None, parse_dns = False)
             else:
-                # self._LOG.info ("+++++ Key name belongs to DNS, trying to discover forwarding hint for it")
                 try:
-                    [fh_result, fh_msg] = ndns.CachingQueryObj.get (zone, dns.rdatatype.FH, True, face)
-                    hint = random.choice (fh_msg.answer[0].items).hint
-                    [keyDataPacket, not_used] = ndns.CachingQueryObj.get_raw (key_name, hint = hint, parse_dns = False)
-                    
+                    resolver = Resolver (face, nextLevelProcessor)
+                    ndns.CachingQueryObj.expressQueryFor (zone, dns.rdatatype.FH, True, face,
+                                                          resolver.onHintData, nextLevelProcessor.onError, nextLevelProcessor.onTimeout)
+
                 except ndns.query.QueryException:
-                    # self._LOG.info ("Cannot find what is the forwarding hint, trying to get directly")
-                    keyDataPacket = face.get (key_name, timeoutms = 3000)
-
-            if not keyDataPacket:
-                return False
-            
-            key = ndn.Key.createFromDER (public = keyDataPacket.content)
-            verified = dataPacket.verify_signature (key)
-                
-            if not verified:
-                return False
-            
-            self._LOG.info ("%s policy OKs [%s] to be signed with [%s]" % ('--' * (11-limit_left), data_name, key_name))
-            
-            if not self.verify (keyDataPacket, face, limit_left-1):
-                return False
-
-            if dataPacket.signedInfo.type == ndn.CONTENT_KEY:
-                if len(self.trustedCache) > self.trustedCacheLimit:
-                    self.trustedCache = {}
-                
-                self.trustedCache[str(data_name)] = [ndn.Key.createFromDER (public = dataPacket.content), int (time.time ()) + dataPacket.signedInfo.freshnessSeconds]
-
-            return True
+                    face.expressInterestSimple (key_name, nextLevelProcessor.onData, nextLevelProcessor.onTimeout)
 
     def authorize_by_anchor (self, data_name, key_name):
         # self._LOG.debug ("== authorize_by_anchor == data: [%s], key: [%s]" % (data_name, key_name))
@@ -135,7 +124,7 @@ class IdentityPolicy:
                 namespace_key = anchor[1]
                 if namespace_key[:] == data_name[0:len (namespace_key)]:
                     return anchor[2]
-                
+
         return None
 
     def authorize_by_rule (self, data_name, key_name):
@@ -165,8 +154,75 @@ class IdentityPolicy:
                     namespace_data = ndn.Name (namespace_data)
 
                     # self._LOG.debug ("  >> rule: key [%s], data [%s]" % (namespace_key, namespace_data))
-                    
+
                     if namespace_key[:] == namespace_data[0:len (namespace_key)]:
                         return True
         return False
-    
+
+# Helper classes
+
+class RecursiveVerifier:
+    def __init__ (self, parentCallback):
+        self.parentCallback = parentCallback
+
+    def __call__ (self, dataPacket, status):
+        if not status:
+            self.parentCallback (dataPacket, False)
+            return
+
+        if dataPacket.signedInfo.type == ndn.CONTENT_KEY:
+            if len(self.trustedCache) > self.trustedCacheLimit:
+                self.trustedCache = {}
+
+            self.trustedCache[str(data_name)] = [ndn.Key.createFromDER (public = dataPacket.content),
+                                                 int (time.time ()) + dataPacket.signedInfo.freshnessSeconds]
+
+        self.parentCallback (dataPacket, True)
+
+class NextLevelProcessor:
+    def __init__ (self, face, policy, dataPacket, parentCallback):
+        self.face = face
+        self.policy = policy
+        self.dataPacket = dataPacket
+        self.parentCallback = parentCallback
+
+    def onData (self, interest, keyDataPacket):
+        key = ndn.Key.createFromDER (public = keyDataPacket.content)
+        verified = dataPacket.verify_signature (key)
+
+        if not verified:
+            self.parentCallback (dataPacket, False)
+            return
+
+        self.policy._LOG.info ("%s policy OKs [%s] to be signed with [%s]" % ('--' * (11-limit_left), data_name, key_name))
+        self.policy.verifyAsync (keyDataPacket, self.face, RecursiveVerifier (self.parentCallback), limit_left-1)
+
+    def onTimeout (self, interest):
+        self.parentCallback (self.dataPacket, False)
+
+    def onError (self, error):
+        self.parentCallback (self.dataPacket, False)
+
+class KeyResolver:
+    def __init__ (self, processor):
+        self.processor = processor
+
+    def onKeyData (self, keyDataPacket, not_used):
+        self.processor.onData (None, keyDataPacket)
+
+class Resolver:
+    def __init__ (self, face, processor):
+        self.face = face
+        self.processor = processor
+
+    def onHintData (self, fh_result, fh_msg):
+        hint = random.choice (fh_msg.answer[0].items).hint
+        ndns.CachingQueryObj.expressQueryForRaw (key_name, self.face,
+                                                 self.onFhData, self.onError, self.processor.onTimeout,
+                                                 hint = hint, parse_dns = False)
+
+    def onFhData (self, keyDataPacket, not_used):
+        self.processor.onData (None, keyDataPacket)
+
+    def onError (self, error):
+        self.processor.onError (error)
