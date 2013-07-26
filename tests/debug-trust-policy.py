@@ -15,7 +15,7 @@ import sys; sys.path = ["%s/../lib" % sys.path[0]] + sys.path
 import argparse, time, logging, logging.handlers
 import ndns
 from ndns.policy.identity import *
-import pyccn
+import ndn
 
 _LOG = logging.getLogger ()
 _LOG.setLevel (logging.DEBUG)

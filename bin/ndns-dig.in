@@ -10,9 +10,8 @@
 #
 
 # make sure modules from lib/ are loaded
-import sys
-_WORKDIR = sys.path[0]
-sys.path = ["%s/lib" % _WORKDIR] + sys.path
+import sys, os
+sys.path = ["@LIBDIR@", "@LIBDIR@/lib", "@LIBDIR@/ndns/lib"] + sys.path
 
 import argparse, logging
 

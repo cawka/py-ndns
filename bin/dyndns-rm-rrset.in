@@ -9,8 +9,8 @@
 # Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
 # 
 
-# make sure modules from lib/ are loaded
-import sys; sys.path = ["%s/lib" % sys.path[0]] + sys.path
+import sys
+sys.path = ["@LIBDIR@", "@LIBDIR@/lib", "@LIBDIR@/ndns/lib"] + sys.path
 
 import argparse
 from ndns import dyndns
