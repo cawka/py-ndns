@@ -55,15 +55,13 @@ def build (bld):
 
     bld (features = "py",
          source = bld.path.ant_glob(['ndns/**/*.py']),
-         install_from = ".")
-
-    bld (features = "py",
-         source = bld.path.ant_glob(['contrib/iscpy/**/*.py']),
-         install_from = "contrib")
+         install_from = ".",
+         install_path = "${LIBDIR}/ndns")
 
     bld (features = "py",
          source = bld.path.ant_glob(['contrib/dnspython/dns/**/*.py']),
-         install_from = "contrib/dnspython")
+         install_from = "contrib/dnspython",
+         install_path = "${LIBDIR}/ndns")
 
     bld (features = "subst",
          source = bld.path.ant_glob(['bin/**/*.in']),

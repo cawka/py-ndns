@@ -29,6 +29,8 @@ parser.add_argument('zone', metavar='zone', type=str,
                     help='''NDN name of the zone''')
 parser.add_argument('--wire', dest='show_wire', action='store_true', default=False,
                     help='''Display zone content based on wire-formatted DATA packets''')
+parser.add_argument('--data-dir', dest='data_dir', type=str, default="@LOCALSTATEDIR@/ndns",
+                    help='''Directory that will store NDNS database and key files [default: @LOCALSTATEDIR@/ndns]''')
 args = parser.parse_args()
 
 if (not args.zone):
@@ -40,7 +42,7 @@ if (not args.zone):
 ######################################################################
 
 if( __name__ == '__main__' ):
-    _ndns = ndns.ndns_session ()
+    _ndns = ndns.ndns_session (args.data_dir)
 
     try:
         zone_ndn = ndn.Name (args.zone)

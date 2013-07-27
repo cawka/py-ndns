@@ -21,29 +21,30 @@ import dns.zone
 import ndns
 import ndn
 
-if( __name__ == '__main__' ):
+######################################################################
+######################################################################
+######################################################################
 
-    ######################################################################
-    ######################################################################
-    ######################################################################
-    
-    parser = argparse.ArgumentParser(description='Add RR record(s) to NDNS zone')
-    parser.add_argument('zone', metavar='zone', type=str,
-                        help='''NDN name of the zone''')
-    parser.add_argument('rr', metavar='rr', type=str, nargs='?', default="",
-                        help='''Specification of RR to add. This should be a line in standard zone format, like "<TTL> <CLASS> <TYPE> <RRDATA>"
-                                For example: "3600 IN FH /ndn/ucla.edu".
-                                If this parameter not set, then input will be expected from standard input''')
-    args = parser.parse_args()
-    
-    if (not args.zone):
-        parser.print_help ()
-        exit (1)
-    ######################################################################
-    ######################################################################
-    ######################################################################
-    
-    _ndns = ndns.ndns_session ()
+parser = argparse.ArgumentParser(description='Add RR record(s) to NDNS zone')
+parser.add_argument('zone', metavar='zone', type=str,
+                    help='''NDN name of the zone''')
+parser.add_argument('rr', metavar='rr', type=str, nargs='?', default="",
+                    help='''Specification of RR to add. This should be a line in standard zone format, like "<TTL> <CLASS> <TYPE> <RRDATA>"
+                            For example: "3600 IN FH /ndn/ucla.edu".
+                            If this parameter not set, then input will be expected from standard input''')
+parser.add_argument('--data-dir', dest='data_dir', type=str, default="@LOCALSTATEDIR@/ndns",
+                    help='''Directory that will store NDNS database and key files [default: @LOCALSTATEDIR@/ndns]''')
+args = parser.parse_args()
+
+if (not args.zone):
+    parser.print_help ()
+    exit (1)
+######################################################################
+######################################################################
+######################################################################
+
+if( __name__ == '__main__' ):
+    _ndns = ndns.ndns_session (args.data_dir)
 
     try:
         zone_ndn = ndn.Name (args.zone)

@@ -9,7 +9,6 @@
 # Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
 # 
 
-import iscpy
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -39,18 +38,16 @@ Pr3CwyBRloTJJbm5kf+pGuJh4fE9Qk0i/fS9Xs6gFup3oPnr+wFFjJObnRTrUsaM
 8TQokOLYZFsatsZOvwIDAQAB
 -----END PUBLIC KEY-----""")
                 ]],
-    rules = [["^((/[^/]+)*)/DNS((/[^/]+)*)/[^/]+/NDNCERT$", "\\1\\3", "^((/[^/]+)*)/DNS((/[^/]+)*)$", "\\1\\3"],
-             ["^((/[^/]+)*)/DNS((/[^/]+)*)/[^/]+/NDNCERT$", "\\1\\3", "^((/[^/]+)*)/([^/\.]+)\.([^/\.]+)/DNS((/[^/]+)*)$", "\\1/\\4/\\3\\5"],
-             ["^((/[^/]+)*)/DNS((/[^/]+)*)/[^/]+/NDNCERT$", "\\1\\3", "(.*)", "\\1"]]
+    rules = [["^(<.*>*)<DNS>(<.*>*)<.*><NDNCERT>$", "\\1\\2", "^(<.*>*)<DNS>(<.*>*)$", "\\1\\2"],
+             # ["^(<.*>*)<DNS>(<.*>*)<.*><NDNCERT>$", "\\1\\2", "^(<.*>*)<(.*)\.(.*)>DNS(<.*>*)$", "\\1\\3\\2\\4"],
+             ["^(<.*>*)<DNS>(<.*>*)<NDNCERT>$", "\\1\\2", "(.*)", "\\1"]]
     )
 
 # CachingQueryObj = query.CachingQuery ()
 
-def ndns_session (config = "etc/ndns.conf"):
-    conf = iscpy.ParseISCString (open (config).read ())
-    zonedb = conf['options']['zonedb'].strip ("\"'")
-    keydir = conf['options']['keydir'].strip ("\"'")
-    scopes = [ndn.Name (scope.strip ("\"'")) for scope in conf['options']['scopes'].keys ()]
+def ndns_session (libdir):
+    zonedb = "%s/ndns.db" % libdir
+    keydir = "%s/keys" % libdir
 
     db = create_engine ('sqlite:///%s' % zonedb)
     # db.echo = True
@@ -60,7 +57,6 @@ def ndns_session (config = "etc/ndns.conf"):
     sm = sessionmaker (bind = db)
     session = sm ()
     session.keydir = keydir
-    session.scopes = scopes
     return session
 
 def createSignedData (session, name, content, freshness, key, type = ndn.CONTENT_DATA):

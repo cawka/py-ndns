@@ -85,9 +85,7 @@ class SimpleQuery:
             # don't verify the outer part, it cannot be verified for now anyways
             data = ndn.ContentObject.fromWire (data.content)
 
-        self._onVerify (data, True)
-
-        # return ndns.TrustPolicy.verifyAsync (self.face, data, self._onVerify)
+        return ndns.TrustPolicy.verifyAsync (self.face, data, self._onVerify)
 
     def _onTimeout (self, interest):
         return self.onError ("Query timed out")
