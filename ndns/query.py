@@ -231,80 +231,81 @@ class SimpleQuery:
 #         [real_result, real_msg] = ndns.CachingQueryObj.get_simple (zone, hint, label_real, rrtype, parse_dns, face)
 #         return [real_result, real_msg]
 
-# class CachingQuery:
-#     def __init__ (self):
-#         self.cache = {}
-#         self.cache_raw = {}
+class CachingQuery:
+    def __init__ (self):
+        self.cache = {}
+        self.cache_raw = {}
 
-#     def get (self, name, rrtype = dns.rdatatype.FH, parse_dns = True, face = None):
-#         if rrtype is None:
-#             rrtype = dns.rdatatype.FH
+    # def get (self, name, rrtype = dns.rdatatype.FH, parse_dns = True, face = None):
+    #     if rrtype is None:
+    #         rrtype = dns.rdatatype.FH
 
-#         if isinstance (rrtype, str):
-#             rrtype = dns.rdatatype.from_text (rrtype)
+    #     if isinstance (rrtype, str):
+    #         rrtype = dns.rdatatype.from_text (rrtype)
 
-#         class Key:
-#             def __init__ (self, name, type):
-#                 self.name = name
-#                 self.type = type
+    #     class Key:
+    #         def __init__ (self, name, type):
+    #             self.name = name
+    #             self.type = type
     
-#             def __eq__ (self, other):
-#                 return self.name == other.name and self.type == other.type
+    #         def __eq__ (self, other):
+    #             return self.name == other.name and self.type == other.type
     
-#             def __ne__ (self, other):
-#                 return self.name != other.name or self.type != other.type
+    #         def __ne__ (self, other):
+    #             return self.name != other.name or self.type != other.type
     
-#             def __hash__ (self):
-#                 return str(self.name).__hash__ () + self.type
+    #         def __hash__ (self):
+    #             return str(self.name).__hash__ () + self.type
 
-#         key = Key (name, rrtype)
-#         try:
-#             [result, msg, ttl] = self.cache[key]
-#             if time.time () > ttl:
-#                 del self.cache[key]
-#             else:
-#                 # _LOG.debug ("              found in cache")
-#                 return [result, msg]
+    #     key = Key (name, rrtype)
+    #     try:
+    #         [result, msg, ttl] = self.cache[key]
+    #         if time.time () > ttl:
+    #             del self.cache[key]
+    #         else:
+    #             # _LOG.debug ("              found in cache")
+    #             return [result, msg]
 
-#         except KeyError:
-#             pass
+    #     except KeyError:
+    #         pass
 
-#         # _LOG.debug ("CachingQuery: name: %s, type: %s" % (name, dns.rdatatype.to_text (rrtype)))
+    #     # _LOG.debug ("CachingQuery: name: %s, type: %s" % (name, dns.rdatatype.to_text (rrtype)))
         
-#         [result, msg] = IterativeQuery.get (name, rrtype, parse_dns)
-#         self.cache[key] = [result, msg, int (time.time ()) + result.signedInfo.freshnessSeconds]
+    #     [result, msg] = IterativeQuery.get (name, rrtype, parse_dns)
+    #     self.cache[key] = [result, msg, int (time.time ()) + result.signedInfo.freshnessSeconds]
 
-#         return [result, msg]
+    #     return [result, msg]
 
-#     def get_raw (self, query, zone = None, hint = None, label = None, rrtype = None, parse_dns = True, face = None):
-#         key = str (query)
-#         try:
-#             [result, msg, ttl] = self.cache_raw [key]
+    def expressQueryForRaw (self,
+                            face,
+                            query, 
+                            onResult, onError,
+                            zone = None, hint = None, label = None, rrtype = None, parse_dns = True):
+        key = str (query)
+        try:
+            [result, msg, ttl] = self.cache_raw [key]
         
-#             if time.time () > ttl:
-#                 del self.cache_raw[key]
-#             else:
-#                 # _LOG.debug ("                   found in cache_raw [%s]" % (query))
-#                 return [result, msg]
+            if time.time () > ttl:
+                del self.cache_raw[key]
+            else:
+                return [result, msg]
+        except KeyError:
+            pass
 
-#         except KeyError:
-#             pass
+        [result, msg] = SimpleQuery.get_raw (query, zone, hint, label, rrtype, parse_dns, face)
+        self.cache_raw[key] = [result, msg, int (time.time ()) + result.signedInfo.freshnessSeconds]
 
-#         # _LOG.debug ("CachingQuery.raw: [%s]" % (query))
-#         [result, msg] = SimpleQuery.get_raw (query, zone, hint, label, rrtype, parse_dns, face)
-#         self.cache_raw[key] = [result, msg, int (time.time ()) + result.signedInfo.freshnessSeconds]
+        return [result, msg]
 
-#         return [result, msg]
+    def get_simple (self, zone, hint, label, rrtype, parse_dns = True, face = None):
+        if isinstance(rrtype, str):
+            rrtype = dns.rdatatype.to_text (dns.rdatatype.from_text (rrtype))
+        else:
+            rrtype = dns.rdatatype.to_text (rrtype)
 
-#     def get_simple (self, zone, hint, label, rrtype, parse_dns = True, face = None):
-#         if isinstance(rrtype, str):
-#             rrtype = dns.rdatatype.to_text (dns.rdatatype.from_text (rrtype))
-#         else:
-#             rrtype = dns.rdatatype.to_text (rrtype)
+        query = ndn.Name (zone).append ("DNS")
+        if len(label) > 0:
+            query = query.append (label)
+        query = query.append (rrtype)
 
-#         query = ndn.Name (zone).append ("DNS")
-#         if len(label) > 0:
-#             query = query.append (label)
-#         query = query.append (rrtype)
-
-#         return self.get_raw (query, zone, hint, label, rrtype, parse_dns, face)
+        return self.get_raw (query, zone, hint, label, rrtype, parse_dns, face)

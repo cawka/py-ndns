@@ -94,7 +94,7 @@ class IdentityPolicy:
             nextLevelProcessor = NextLevelProcessor (self, face, dataPacket, onVerify)
 
             if comp != "DNS":
-                face.expressInterestSimple (key_name, nextLevelProcessor.onData, nextLevelProcessor.onTimeout)
+                face.expressInterest (key_name, nextLevelProcessor.onData, nextLevelProcessor.onTimeout)
             elif len (zone) == 0:
                 keyResolver = KeyResolver (nextLevelProcessor)
                 ndns.CachingQueryObj.expressQueryForRaw (key_name, face, 
@@ -107,7 +107,7 @@ class IdentityPolicy:
                                                           resolver.onHintData, nextLevelProcessor.onError, nextLevelProcessor.onTimeout)
 
                 except ndns.query.QueryException:
-                    face.expressInterestSimple (key_name, nextLevelProcessor.onData, nextLevelProcessor.onTimeout)
+                    face.expressInterest (key_name, nextLevelProcessor.onData, nextLevelProcessor.onTimeout)
 
     def authorize_by_anchor (self, data_name, key_name):
         # self._LOG.debug ("== authorize_by_anchor == data: [%s], key: [%s]" % (data_name, key_name))
