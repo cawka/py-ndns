@@ -1,0 +1,498 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Database elements &mdash; NDNS: DNS service for Named Data Networking 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="NDNS: DNS service for Named Data Networking 0.1 documentation" href="index.html" />
+    <link rel="next" title="DNS elements" href="dns.html" />
+    <link rel="prev" title="Welcome to NDNS: DNS service for Named Data Networking’s documentation!" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dns.html" title="DNS elements"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to NDNS: DNS service for Named Data Networking’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">NDNS: DNS service for Named Data Networking 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="database-elements">
+<h1>Database elements<a class="headerlink" href="#database-elements" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-ndns.zone">
+<span id="zone"></span><h2>Zone<a class="headerlink" href="#module-ndns.zone" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ndns.zone.Zone">
+<em class="property">class </em><tt class="descclassname">ndns.zone.</tt><tt class="descname">Zone</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#ndns.zone.Zone" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">sqlalchemy.ext.declarative.api.Base</span></tt></p>
+<p>Zone abstraction:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">zones</span> <span class="p">(</span>
+        <span class="n">id</span> <span class="nb">INTEGER</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+        <span class="n">name</span> <span class="nb">BLOB</span><span class="p">,</span>
+        <span class="n">default_key_id</span> <span class="nb">INTEGER</span><span class="p">,</span>
+        <span class="k">PRIMARY</span> <span class="k">KEY</span> <span class="p">(</span><span class="n">id</span><span class="p">)</span>
+<span class="p">);</span>
+<span class="k">CREATE</span> <span class="k">UNIQUE</span> <span class="k">INDEX</span> <span class="n">ix_zones_name</span> <span class="k">ON</span> <span class="n">zones</span> <span class="p">(</span><span class="n">name</span><span class="p">);</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><strong>rrsets</strong> &#8211; One to many relationship to <a class="reference internal" href="#ndns.rrset.RRSet" title="ndns.rrset.RRSet"><tt class="xref py py-class docutils literal"><span class="pre">ndns.rrset.RRSet</span></tt></a></li>
+<li><strong>soa</strong> &#8211; One-to-one map (shortcut) to SOA <a class="reference internal" href="#ndns.rrset.RRSet" title="ndns.rrset.RRSet"><tt class="xref py py-class docutils literal"><span class="pre">ndns.rrset.RRSet</span></tt></a> of the zone</li>
+<li><strong>keys</strong> &#8211; One to many relationship to <a class="reference internal" href="#ndns.key.Key" title="ndns.key.Key"><tt class="xref py py-class docutils literal"><span class="pre">ndns.key.Key</span></tt></a></li>
+<li><strong>default_key</strong> &#8211; One-to-one map to default <a class="reference internal" href="#ndns.key.Key" title="ndns.key.Key"><tt class="xref py py-class docutils literal"><span class="pre">ndns.key.Key</span></tt></a> for the zone</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="ndns.zone.Zone.dns_name">
+<tt class="descname">dns_name</tt><a class="headerlink" href="#ndns.zone.Zone.dns_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert internal wire representation of zone name to DNS name (<a class="reference internal" href="dns.html#dns.name.Name" title="dns.name.Name"><tt class="xref py py-class docutils literal"><span class="pre">dns.name.Name</span></tt></a> object)</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="ndns.zone.Zone.has_name">
+<em class="property">classmethod </em><tt class="descname">has_name</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#ndns.zone.Zone.has_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Facilitate SQL comparison with another zone name in wire format</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ndns.zone.Zone.name">
+<tt class="descname">name</tt><a class="headerlink" href="#ndns.zone.Zone.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert internal wire representation of zone name to <tt class="xref py py-class docutils literal"><span class="pre">ndn.Name</span></tt> object</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ndns.key">
+<span id="key"></span><h2>Key<a class="headerlink" href="#module-ndns.key" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ndns.key.Key">
+<em class="property">class </em><tt class="descclassname">ndns.key.</tt><tt class="descname">Key</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#ndns.key.Key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">sqlalchemy.ext.declarative.api.Base</span></tt></p>
+<p>Key abstraction:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">keys</span> <span class="p">(</span>
+    <span class="n">id</span> <span class="nb">INTEGER</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+    <span class="n">zone_id</span> <span class="nb">INTEGER</span><span class="p">,</span>
+    <span class="n">name</span> <span class="nb">BLOB</span><span class="p">,</span>
+    <span class="n">parent_zone</span> <span class="nb">BLOB</span><span class="p">,</span>
+    <span class="k">key_type</span> <span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span> <span class="cm">/* &quot;KSK&quot;, &quot;ZKS&quot;, &quot;DZSK&quot; */</span>
+    <span class="n">rrset_id</span> <span class="nb">INTEGER</span><span class="p">,</span>
+    <span class="k">PRIMARY</span> <span class="k">KEY</span> <span class="p">(</span><span class="n">id</span><span class="p">),</span>
+    <span class="k">FOREIGN</span> <span class="k">KEY</span><span class="p">(</span><span class="n">zone_id</span><span class="p">)</span> <span class="k">REFERENCES</span> <span class="n">zones</span> <span class="p">(</span><span class="n">id</span><span class="p">)</span> <span class="k">ON</span> <span class="k">DELETE</span> <span class="k">CASCADE</span> <span class="k">ON</span> <span class="k">UPDATE</span> <span class="k">CASCADE</span><span class="p">,</span>
+    <span class="k">CHECK</span> <span class="p">(</span><span class="k">key_type</span> <span class="k">IN</span> <span class="p">(</span><span class="s1">&#39;KSK&#39;</span><span class="p">,</span> <span class="s1">&#39;ZKS&#39;</span><span class="p">,</span> <span class="s1">&#39;DZSK&#39;</span><span class="p">))</span>
+<span class="p">);</span>
+<span class="k">CREATE</span> <span class="k">INDEX</span> <span class="n">ix_keys_zone_id</span> <span class="k">ON</span> <span class="n">keys</span> <span class="p">(</span><span class="n">zone_id</span><span class="p">);</span>
+<span class="k">CREATE</span> <span class="k">UNIQUE</span> <span class="k">INDEX</span> <span class="n">ix_keys_name</span> <span class="k">ON</span> <span class="n">keys</span> <span class="p">(</span><span class="n">name</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>In addition to database entry, this class manages RSA keys (private and public) on disk: several
+methods require explicit location of the folder where private/public key are stored or should be
+stored.</p>
+<p>Note that the current implementation does not provide any protection of private keys and they are
+stored in non-encrypted form.</p>
+<p>Whenever requested, the key (<tt class="xref py py-class docutils literal"><span class="pre">ndn.Key</span></tt>) will be loaded and cached.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><strong>rrset</strong> &#8211; One-to-one relationship (shortcut) to <a class="reference internal" href="#ndns.rrset.RRSet" title="ndns.rrset.RRSet"><tt class="xref py py-class docutils literal"><span class="pre">ndns.rrset.RRSet</span></tt></a> data</li>
+<li><strong>zone</strong> &#8211; Back-reference to the <a class="reference internal" href="#ndns.zone.Zone" title="ndns.zone.Zone"><tt class="xref py py-class docutils literal"><span class="pre">ndns.zone.Zone</span></tt></a> to which the key belongs</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="ndns.key.Key.generate">
+<tt class="descname">generate</tt><big>(</big><em>keydir</em>, <em>password=None</em><big>)</big><a class="headerlink" href="#ndns.key.Key.generate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate key pair on disk</p>
+<p>The generated key (both private and public) will be internally cached and returned
+for subsequent access to <a class="reference internal" href="#ndns.key.Key.private_key" title="ndns.key.Key.private_key"><tt class="xref py py-attr docutils literal"><span class="pre">private_key</span></tt></a> or <a class="reference internal" href="#ndns.key.Key.public_key" title="ndns.key.Key.public_key"><tt class="xref py py-attr docutils literal"><span class="pre">public_key</span></tt></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>keydir</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Key directory</li>
+<li><strong>password</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Password with which private key is encrypted</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ndns.key.Key.label">
+<tt class="descname">label</tt><a class="headerlink" href="#ndns.key.Key.label" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get DNS label of the key name</p>
+<p>Note that this method makes sense only for ZSKs.  For KSKs, use <a class="reference internal" href="#ndns.key.Key.parent_label" title="ndns.key.Key.parent_label"><tt class="xref py py-attr docutils literal"><span class="pre">parent_label</span></tt></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">DNS formatted string of key name minus the zone name</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">str</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ndns.key.Key.load_default_key">
+<tt class="descname">load_default_key</tt><big>(</big><big>)</big><a class="headerlink" href="#ndns.key.Key.load_default_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load host&#8217;s default key and key locator (from <tt class="docutils literal"><span class="pre">~/.ccnx/.ccnx_keystore</span></tt> and <tt class="docutils literal"><span class="pre">~/.ccnx/.ccnx_keystore.pubcert</span></tt>)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ndns.key.Key.load_from_pubkey">
+<tt class="descname">load_from_pubkey</tt><big>(</big><em>pubkey</em><big>)</big><a class="headerlink" href="#ndns.key.Key.load_from_pubkey" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create public key from the supplied string</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>pubkey</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Public key in PEM format</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ndns.key.Key.local_key_id">
+<tt class="descname">local_key_id</tt><a class="headerlink" href="#ndns.key.Key.local_key_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get local (unique) identifier of the key that can be used as part of the file name</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ndns.key.Key.name">
+<tt class="descname">name</tt><a class="headerlink" href="#ndns.key.Key.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get <tt class="xref py py-class docutils literal"><span class="pre">ndn.Name</span></tt> object from internally stored wire format of the key name</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ndns.key.Key.ndn_label">
+<tt class="descname">ndn_label</tt><a class="headerlink" href="#ndns.key.Key.ndn_label" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get label of the key name</p>
+<p>Note that this method makes sense only for ZSKs</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Key name minus the zone name</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><tt class="xref py py-class docutils literal"><span class="pre">ndn.Name</span></tt></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ndns.key.Key.parent_label">
+<tt class="descname">parent_label</tt><a class="headerlink" href="#ndns.key.Key.parent_label" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get DNS label of the key, seen from the parent zone</p>
+<p>Note that this method makes sense only KSKs.  For ZSKs use <a class="reference internal" href="#ndns.key.Key.label" title="ndns.key.Key.label"><tt class="xref py py-attr docutils literal"><span class="pre">label</span></tt></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">DNS formatted string of key name minus the parent&#8217;s zone name</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">str</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ndns.key.Key.parent_zone">
+<tt class="descname">parent_zone</tt><a class="headerlink" href="#ndns.key.Key.parent_zone" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get <tt class="xref py py-class docutils literal"><span class="pre">ndn.Name</span></tt> object from internaly stored wire format of the parent&#8217;s zone name where key belongs</p>
+<p>Note that this property makes sense only for certain KSKs, other keys belong to the zone itself</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ndns.key.Key.private_key">
+<tt class="descname">private_key</tt><big>(</big><em>keydir</em>, <em>password=None</em><big>)</big><a class="headerlink" href="#ndns.key.Key.private_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get <tt class="xref py py-class docutils literal"><span class="pre">ndn.Key</span></tt> containing private key</p>
+<p>Name of the key file is automatically determined based on the key and zone name.</p>
+<p>The loaded key (both private and public) will be internally cached and returned
+for subsequent accesses.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>keydir</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Key directory</li>
+<li><strong>password</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Password with which private key is encrypted</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><tt class="xref py py-class docutils literal"><span class="pre">ndn.Key</span></tt></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ndns.key.Key.public_key">
+<tt class="descname">public_key</tt><big>(</big><em>keydir</em><big>)</big><a class="headerlink" href="#ndns.key.Key.public_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get <tt class="xref py py-class docutils literal"><span class="pre">ndn.Key</span></tt> containing public key</p>
+<p>Name of the key file is automatically determined based on the key and zone name.</p>
+<p>The loaded key (only public) will be internally cached and returned for subsequent accesses.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>keydir</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Key directory</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><tt class="xref py py-class docutils literal"><span class="pre">ndn.Key</span></tt></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="ndns.key.KeyException">
+<em class="property">exception </em><tt class="descclassname">ndns.key.</tt><tt class="descname">KeyException</tt><a class="headerlink" href="#ndns.key.KeyException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">exceptions.Exception</span></tt></p>
+<p>Exception raised when there is a problem with key</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-ndns.rrset">
+<span id="rr-set"></span><h2>RR set<a class="headerlink" href="#module-ndns.rrset" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ndns.rrset.RRSet">
+<em class="property">class </em><tt class="descclassname">ndns.rrset.</tt><tt class="descname">RRSet</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#ndns.rrset.RRSet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">sqlalchemy.ext.declarative.api.Base</span></tt></p>
+<p>RR set abstraction:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">rrsets</span> <span class="p">(</span>
+    <span class="n">id</span> <span class="nb">INTEGER</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+    <span class="n">zone_id</span> <span class="nb">INTEGER</span><span class="p">,</span>
+    <span class="n">label</span> <span class="nb">VARCHAR</span><span class="p">,</span>
+    <span class="n">rclass</span> <span class="nb">INTEGER</span><span class="p">,</span>
+    <span class="n">rtype</span> <span class="nb">INTEGER</span><span class="p">,</span>
+    <span class="n">ndndata</span> <span class="nb">BLOB</span><span class="p">,</span>
+    <span class="k">PRIMARY</span> <span class="k">KEY</span> <span class="p">(</span><span class="n">id</span><span class="p">),</span>
+    <span class="k">FOREIGN</span> <span class="k">KEY</span><span class="p">(</span><span class="n">zone_id</span><span class="p">)</span> <span class="k">REFERENCES</span> <span class="n">zones</span> <span class="p">(</span><span class="n">id</span><span class="p">)</span> <span class="k">ON</span> <span class="k">DELETE</span> <span class="k">CASCADE</span> <span class="k">ON</span> <span class="k">UPDATE</span> <span class="k">CASCADE</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><strong>rrset</strong> &#8211; One-to-many relationship to <a class="reference internal" href="#ndns.rr.RR" title="ndns.rr.RR"><tt class="xref py py-class docutils literal"><span class="pre">ndns.rr.RR</span></tt></a> data</li>
+<li><strong>zone</strong> &#8211; Back-reference to the <a class="reference internal" href="#ndns.zone.Zone" title="ndns.zone.Zone"><tt class="xref py py-class docutils literal"><span class="pre">ndns.zone.Zone</span></tt></a> to which the key belongs</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="ndns.rrset.RRSet.dns_label">
+<tt class="descname">dns_label</tt><a class="headerlink" href="#ndns.rrset.RRSet.dns_label" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get DNS label of the RR set (relatively to the zone)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ndns.rrset.RRSet.dns_msg">
+<tt class="descname">dns_msg</tt><a class="headerlink" href="#ndns.rrset.RRSet.dns_msg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get DNS representation (<a class="reference internal" href="dns.html#dns.message.Message" title="dns.message.Message"><tt class="xref py py-class docutils literal"><span class="pre">dns.message.Message</span></tt></a>) of the stored RR set</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ndns.rrset.RRSet.ndndata">
+<tt class="descname">ndndata</tt><a class="headerlink" href="#ndns.rrset.RRSet.ndndata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get NDN Data packet (<tt class="xref py py-class docutils literal"><span class="pre">ndn.Data</span></tt>) converted from the stored wire format</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ndns.rrset.RRSet.refresh_ndndata">
+<tt class="descname">refresh_ndndata</tt><big>(</big><em>session</em>, <em>key</em><big>)</big><a class="headerlink" href="#ndns.rrset.RRSet.refresh_ndndata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Refresh (re-sign) NDN Data packet associated with RR set</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>session</strong> (<a class="reference external" href="http://docs.python.org/library/stdtypes.html#dict" title="(in Python v2.7)"><em>dict</em></a>) &#8211; Dictionary containing configuration information (e.g., keydir)</li>
+<li><strong>key</strong> (<a class="reference internal" href="#ndns.key.Key" title="ndns.key.Key"><tt class="xref py py-class docutils literal"><span class="pre">ndns.key.Key</span></tt></a>) &#8211; <a class="reference internal" href="#ndns.key.Key" title="ndns.key.Key"><tt class="xref py py-class docutils literal"><span class="pre">ndns.key.Key</span></tt></a> object that should be used for sigining the Data packet</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ndns.rr">
+<span id="resource-record"></span><h2>Resource record<a class="headerlink" href="#module-ndns.rr" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ndns.rr.RR">
+<em class="property">class </em><tt class="descclassname">ndns.rr.</tt><tt class="descname">RR</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#ndns.rr.RR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">sqlalchemy.ext.declarative.api.Base</span></tt></p>
+<p>Resource record abstraction:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">rrs</span> <span class="p">(</span>
+    <span class="n">id</span> <span class="nb">INTEGER</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+    <span class="n">rrset_id</span> <span class="nb">INTEGER</span><span class="p">,</span>
+    <span class="n">ttl</span> <span class="nb">INTEGER</span><span class="p">,</span>
+    <span class="n">rrdata</span> <span class="nb">BLOB</span><span class="p">,</span>
+    <span class="k">PRIMARY</span> <span class="k">KEY</span> <span class="p">(</span><span class="n">id</span><span class="p">),</span>
+    <span class="k">FOREIGN</span> <span class="k">KEY</span><span class="p">(</span><span class="n">rrset_id</span><span class="p">)</span> <span class="k">REFERENCES</span> <span class="n">rrsets</span> <span class="p">(</span><span class="n">id</span><span class="p">)</span> <span class="k">ON</span> <span class="k">DELETE</span> <span class="k">CASCADE</span> <span class="k">ON</span> <span class="k">UPDATE</span> <span class="k">CASCADE</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><strong>zone</strong> &#8211; Back-reference to the <a class="reference internal" href="#ndns.rrset.RRSet" title="ndns.rrset.RRSet"><tt class="xref py py-class docutils literal"><span class="pre">ndns.rrset.RRSet</span></tt></a> to which the RR belongs</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="ndns.rr.RR.dns_rrdata">
+<tt class="descname">dns_rrdata</tt><a class="headerlink" href="#ndns.rr.RR.dns_rrdata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get <a class="reference internal" href="dns.html#dns.rdata.Rdata" title="dns.rdata.Rdata"><tt class="xref py py-class docutils literal"><span class="pre">dns.rdata.Rdata</span></tt></a> object converted from the stored wire-formatted RDATA</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="ndns.rr.RR.has_rrdata">
+<em class="property">classmethod </em><tt class="descname">has_rrdata</tt><big>(</big><em>other</em>, <em>origin</em><big>)</big><a class="headerlink" href="#ndns.rr.RR.has_rrdata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Facilitate SQL comparison with another RDATA in wire format</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ndns.rr.RR.rrdata">
+<tt class="descname">rrdata</tt><a class="headerlink" href="#ndns.rr.RR.rrdata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get wire-formatted RDATA</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Database elements</a><ul>
+<li><a class="reference internal" href="#module-ndns.zone">Zone</a></li>
+<li><a class="reference internal" href="#module-ndns.key">Key</a></li>
+<li><a class="reference internal" href="#module-ndns.rrset">RR set</a></li>
+<li><a class="reference internal" href="#module-ndns.rr">Resource record</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to NDNS: DNS service for Named Data Networking&#8217;s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="dns.html"
+                        title="next chapter">DNS elements</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/database.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dns.html" title="DNS elements"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to NDNS: DNS service for Named Data Networking’s documentation!"
+             >previous</a> |</li>
+        <li><a href="index.html">NDNS: DNS service for Named Data Networking 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Alexander Afanasyev.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

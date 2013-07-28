@@ -1,0 +1,2459 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>DNS elements &mdash; NDNS: DNS service for Named Data Networking 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="NDNS: DNS service for Named Data Networking 0.1 documentation" href="index.html" />
+    <link rel="prev" title="Database elements" href="database.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="database.html" title="Database elements"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">NDNS: DNS service for Named Data Networking 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="dns-elements">
+<h1>DNS elements<a class="headerlink" href="#dns-elements" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-dns.name">
+<span id="dns-name"></span><h2>DNS Name<a class="headerlink" href="#module-dns.name" title="Permalink to this headline">¶</a></h2>
+<p>DNS Names.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">root:</th><td class="field-body">The DNS root name (<a class="reference internal" href="#dns.name.Name" title="dns.name.Name"><tt class="xref py py-class docutils literal"><span class="pre">dns.name.Name</span></tt></a>)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">empty:</th><td class="field-body">The empty DNS name (<a class="reference internal" href="#dns.name.Name" title="dns.name.Name"><tt class="xref py py-class docutils literal"><span class="pre">dns.name.Name</span></tt></a>)</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="exception">
+<dt id="dns.name.AbsoluteConcatenation">
+<em class="property">exception </em><tt class="descclassname">dns.name.</tt><tt class="descname">AbsoluteConcatenation</tt><a class="headerlink" href="#dns.name.AbsoluteConcatenation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">dns.exception.DNSException</span></tt></p>
+<p>Raised if an attempt is made to append anything other than the
+empty name to an absolute name.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="dns.name.BadEscape">
+<em class="property">exception </em><tt class="descclassname">dns.name.</tt><tt class="descname">BadEscape</tt><a class="headerlink" href="#dns.name.BadEscape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">dns.exception.SyntaxError</span></tt></p>
+<p>Raised if an escaped code in a text format name is invalid.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="dns.name.BadLabelType">
+<em class="property">exception </em><tt class="descclassname">dns.name.</tt><tt class="descname">BadLabelType</tt><a class="headerlink" href="#dns.name.BadLabelType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">dns.exception.FormError</span></tt></p>
+<p>Raised if the label type of a wire format name is unknown.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="dns.name.BadPointer">
+<em class="property">exception </em><tt class="descclassname">dns.name.</tt><tt class="descname">BadPointer</tt><a class="headerlink" href="#dns.name.BadPointer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">dns.exception.FormError</span></tt></p>
+<p>Raised if a compression pointer points forward instead of backward.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="dns.name.EmptyLabel">
+<em class="property">exception </em><tt class="descclassname">dns.name.</tt><tt class="descname">EmptyLabel</tt><a class="headerlink" href="#dns.name.EmptyLabel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">dns.exception.SyntaxError</span></tt></p>
+<p>Raised if a label is empty.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="dns.name.LabelTooLong">
+<em class="property">exception </em><tt class="descclassname">dns.name.</tt><tt class="descname">LabelTooLong</tt><a class="headerlink" href="#dns.name.LabelTooLong" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">dns.exception.SyntaxError</span></tt></p>
+<p>Raised if a label is &gt; 63 octets long.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="dns.name.Name">
+<em class="property">class </em><tt class="descclassname">dns.name.</tt><tt class="descname">Name</tt><big>(</big><em>labels</em><big>)</big><a class="headerlink" href="#dns.name.Name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>A DNS name.</p>
+<p>The dns.name.Name class represents a DNS name as a tuple of labels.
+Instances of the class are immutable.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><strong>labels</strong> &#8211; The tuple of labels in the name. Each label is a string of</td>
+</tr>
+</tbody>
+</table>
+<p>up to 63 octets.</p>
+<dl class="method">
+<dt id="dns.name.Name.canonicalize">
+<tt class="descname">canonicalize</tt><big>(</big><big>)</big><a class="headerlink" href="#dns.name.Name.canonicalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a name which is equal to the current name, but is in
+DNSSEC canonical form.
+:rtype: dns.name.Name object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.name.Name.choose_relativity">
+<tt class="descname">choose_relativity</tt><big>(</big><em>origin=None</em>, <em>relativize=True</em><big>)</big><a class="headerlink" href="#dns.name.Name.choose_relativity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a name with the relativity desired by the caller.  If
+origin is None, then self is returned.  Otherwise, if
+relativize is true the name is relativized, and if relativize is
+false the name is derelativized.
+:rtype: dns.name.Name object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.name.Name.concatenate">
+<tt class="descname">concatenate</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#dns.name.Name.concatenate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new name which is the concatenation of self and other.
+:rtype: dns.name.Name object
+:raises AbsoluteConcatenation: self is absolute and other is
+not the empty name</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.name.Name.derelativize">
+<tt class="descname">derelativize</tt><big>(</big><em>origin</em><big>)</big><a class="headerlink" href="#dns.name.Name.derelativize" title="Permalink to this definition">¶</a></dt>
+<dd><p>If self is a relative name, return a new name which is the
+concatenation of self and origin.  Otherwise return self.
+:rtype: dns.name.Name object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.name.Name.fullcompare">
+<tt class="descname">fullcompare</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#dns.name.Name.fullcompare" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compare two names, returning a 3-tuple (relation, order, nlabels).</p>
+<p>I{relation} describes the relation ship beween the names,
+and is one of: dns.name.NAMERELN_NONE,
+dns.name.NAMERELN_SUPERDOMAIN, dns.name.NAMERELN_SUBDOMAIN,
+dns.name.NAMERELN_EQUAL, or dns.name.NAMERELN_COMMONANCESTOR</p>
+<p>I{order} is &lt; 0 if self &lt; other, &gt; 0 if self &gt; other, and ==
+0 if self == other.  A relative name is always less than an
+absolute name.  If both names have the same relativity, then
+the DNSSEC order relation is used to order them.</p>
+<p>I{nlabels} is the number of significant labels that the two names
+have in common.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.name.Name.is_absolute">
+<tt class="descname">is_absolute</tt><big>(</big><big>)</big><a class="headerlink" href="#dns.name.Name.is_absolute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Is the most significant label of this name the root label?
+:rtype: bool</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.name.Name.is_subdomain">
+<tt class="descname">is_subdomain</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#dns.name.Name.is_subdomain" title="Permalink to this definition">¶</a></dt>
+<dd><p>Is self a subdomain of other?</p>
+<p>The notion of subdomain includes equality.
+:rtype: bool</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.name.Name.is_superdomain">
+<tt class="descname">is_superdomain</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#dns.name.Name.is_superdomain" title="Permalink to this definition">¶</a></dt>
+<dd><p>Is self a superdomain of other?</p>
+<p>The notion of subdomain includes equality.
+:rtype: bool</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.name.Name.is_wild">
+<tt class="descname">is_wild</tt><big>(</big><big>)</big><a class="headerlink" href="#dns.name.Name.is_wild" title="Permalink to this definition">¶</a></dt>
+<dd><p>Is this name wild?  (I.e. Is the least significant label &#8216;*&#8217;?)
+:rtype: bool</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.name.Name.parent">
+<tt class="descname">parent</tt><big>(</big><big>)</big><a class="headerlink" href="#dns.name.Name.parent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the parent of the name.
+:rtype: dns.name.Name object
+:raises NoParent: the name is either the root name or the empty name,
+and thus has no parent.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.name.Name.relativize">
+<tt class="descname">relativize</tt><big>(</big><em>origin</em><big>)</big><a class="headerlink" href="#dns.name.Name.relativize" title="Permalink to this definition">¶</a></dt>
+<dd><p>If self is a subdomain of origin, return a new name which is self
+relative to origin.  Otherwise return self.
+:rtype: dns.name.Name object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.name.Name.split">
+<tt class="descname">split</tt><big>(</big><em>depth</em><big>)</big><a class="headerlink" href="#dns.name.Name.split" title="Permalink to this definition">¶</a></dt>
+<dd><p>Split a name into a prefix and suffix at depth.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>depth</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; the number of labels in the suffix</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Raises ValueError:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">the depth was not &gt;= 0 and &lt;= the length of the</td>
+</tr>
+</tbody>
+</table>
+<p>name.
+&#64;returns: the tuple (prefix, suffix)
+:rtype: tuple</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.name.Name.to_digestable">
+<tt class="descname">to_digestable</tt><big>(</big><em>origin=None</em><big>)</big><a class="headerlink" href="#dns.name.Name.to_digestable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert name to a format suitable for digesting in hashes.</p>
+<p>The name is canonicalized and converted to uncompressed wire format.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>origin</strong> &#8211; If the name is relative and origin is not None, then</td>
+</tr>
+</tbody>
+</table>
+<p>origin will be appended to it.
+:type origin: dns.name.Name object
+:raises NeedAbsoluteNameOrOrigin: All names in wire format are
+absolute.  If self is a relative name, then an origin must be supplied;
+if it is missing, then this exception is raised
+:rtype: string</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.name.Name.to_text">
+<tt class="descname">to_text</tt><big>(</big><em>omit_final_dot=False</em><big>)</big><a class="headerlink" href="#dns.name.Name.to_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert name to text format.
+:param omit_final_dot: If True, don&#8217;t emit the final dot (denoting the
+root label) for absolute names.  The default is False.
+:rtype: string</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.name.Name.to_unicode">
+<tt class="descname">to_unicode</tt><big>(</big><em>omit_final_dot=False</em><big>)</big><a class="headerlink" href="#dns.name.Name.to_unicode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert name to Unicode text format.</p>
+<p>IDN ACE lables are converted to Unicode.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>omit_final_dot</strong> &#8211; If True, don&#8217;t emit the final dot (denoting the</td>
+</tr>
+</tbody>
+</table>
+<p>root label) for absolute names.  The default is False.
+:rtype: string</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.name.Name.to_wire">
+<tt class="descname">to_wire</tt><big>(</big><em>file=None</em>, <em>compress=None</em>, <em>origin=None</em><big>)</big><a class="headerlink" href="#dns.name.Name.to_wire" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert name to wire format, possibly compressing it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>file</strong> &#8211; the file where the name is emitted (typically</td>
+</tr>
+</tbody>
+</table>
+<p>a cStringIO file).  If None, a string containing the wire name
+will be returned.
+:type file: file or None
+:param compress: The compression table.  If None (the default) names
+will not be compressed.
+:type compress: dict
+:param origin: If the name is relative and origin is not None, then
+origin will be appended to it.
+:type origin: dns.name.Name object
+:raises NeedAbsoluteNameOrOrigin: All names in wire format are
+absolute.  If self is a relative name, then an origin must be supplied;
+if it is missing, then this exception is raised</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="dns.name.NameTooLong">
+<em class="property">exception </em><tt class="descclassname">dns.name.</tt><tt class="descname">NameTooLong</tt><a class="headerlink" href="#dns.name.NameTooLong" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">dns.exception.FormError</span></tt></p>
+<p>Raised if a name is &gt; 255 octets long.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="dns.name.NeedAbsoluteNameOrOrigin">
+<em class="property">exception </em><tt class="descclassname">dns.name.</tt><tt class="descname">NeedAbsoluteNameOrOrigin</tt><a class="headerlink" href="#dns.name.NeedAbsoluteNameOrOrigin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">dns.exception.DNSException</span></tt></p>
+<p>Raised if an attempt is made to convert a non-absolute name to
+wire when there is also a non-absolute (or missing) origin.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="dns.name.NoParent">
+<em class="property">exception </em><tt class="descclassname">dns.name.</tt><tt class="descname">NoParent</tt><a class="headerlink" href="#dns.name.NoParent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">dns.exception.DNSException</span></tt></p>
+<p>Raised if an attempt is made to get the parent of the root name
+or the empty name.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.name.from_text">
+<tt class="descclassname">dns.name.</tt><tt class="descname">from_text</tt><big>(</big><em>text</em>, <em>origin=&lt;DNS name .&gt;</em><big>)</big><a class="headerlink" href="#dns.name.from_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert text into a Name object.
+:rtype: dns.name.Name object</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.name.from_unicode">
+<tt class="descclassname">dns.name.</tt><tt class="descname">from_unicode</tt><big>(</big><em>text</em>, <em>origin=&lt;DNS name .&gt;</em><big>)</big><a class="headerlink" href="#dns.name.from_unicode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert unicode text into a Name object.</p>
+<p>Lables are encoded in IDN ACE form.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">dns.name.Name object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.name.from_wire">
+<tt class="descclassname">dns.name.</tt><tt class="descname">from_wire</tt><big>(</big><em>message</em>, <em>current</em><big>)</big><a class="headerlink" href="#dns.name.from_wire" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert possibly compressed wire format into a Name.
+:param message: the entire DNS message
+:type message: string
+:param current: the offset of the beginning of the name from the start
+of the message
+:type current: int
+:raises dns.name.BadPointer: a compression pointer did not point backwards
+in the message
+:raises dns.name.BadLabelType: an invalid label type was encountered.
+&#64;returns: a tuple consisting of the name that was read and the number
+of bytes of the wire format message which were consumed reading it
+:rtype: (dns.name.Name object, int) tuple</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-dns.message">
+<span id="dns-message"></span><h2>DNS message<a class="headerlink" href="#module-dns.message" title="Permalink to this headline">¶</a></h2>
+<p>DNS Messages</p>
+<dl class="exception">
+<dt id="dns.message.BadEDNS">
+<em class="property">exception </em><tt class="descclassname">dns.message.</tt><tt class="descname">BadEDNS</tt><a class="headerlink" href="#dns.message.BadEDNS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">dns.exception.FormError</span></tt></p>
+<p>Raised if an OPT record occurs somewhere other than the start of
+the additional data section.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="dns.message.BadTSIG">
+<em class="property">exception </em><tt class="descclassname">dns.message.</tt><tt class="descname">BadTSIG</tt><a class="headerlink" href="#dns.message.BadTSIG" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">dns.exception.FormError</span></tt></p>
+<p>Raised if a TSIG record occurs somewhere other than the end of
+the additional data section.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="dns.message.Message">
+<em class="property">class </em><tt class="descclassname">dns.message.</tt><tt class="descname">Message</tt><big>(</big><em>id=None</em><big>)</big><a class="headerlink" href="#dns.message.Message" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>A DNS message.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><a class="reference external" href="http://docs.python.org/library/functions.html#id" title="(in Python v2.7)"><strong>id</strong></a> &#8211; The query id; the default is a randomly chosen id.</li>
+<li><strong>flags</strong> &#8211; The DNS flags of the message.  &#64;see: RFC 1035 for an</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>explanation of these flags.
+:type flags: int
+:ivar question: The question section.
+:type question: list of dns.rrset.RRset objects
+:ivar answer: The answer section.
+:type answer: list of dns.rrset.RRset objects
+:ivar authority: The authority section.
+:type authority: list of dns.rrset.RRset objects
+:ivar additional: The additional data section.
+:type additional: list of dns.rrset.RRset objects
+:ivar edns: The EDNS level to use.  The default is -1, no Edns.
+:type edns: int
+:ivar ednsflags: The EDNS flags
+:type ednsflags: long
+:ivar payload: The EDNS payload size.  The default is 0.
+:type payload: int
+:ivar options: The EDNS options
+:type options: list of dns.edns.Option objects
+:ivar request_payload: The associated request&#8217;s EDNS payload size.
+:type request_payload: int
+:ivar keyring: The TSIG keyring to use.  The default is None.
+:type keyring: dict
+:ivar keyname: The TSIG keyname to use.  The default is None.
+:type keyname: dns.name.Name object
+:ivar keyalgorithm: The TSIG algorithm to use; defaults to
+dns.tsig.default_algorithm.  Constants for TSIG algorithms are defined
+in dns.tsig, and the currently implemented algorithms are
+HMAC_MD5, HMAC_SHA1, HMAC_SHA224, HMAC_SHA256, HMAC_SHA384, and
+HMAC_SHA512.
+:type keyalgorithm: string
+:ivar request_mac: The TSIG MAC of the request message associated with
+this message; used when validating TSIG signatures.   &#64;see: RFC 2845 for
+more information on TSIG fields.
+:type request_mac: string
+:ivar fudge: TSIG time fudge; default is 300 seconds.
+:type fudge: int
+:ivar original_id: TSIG original id; defaults to the message&#8217;s id
+:type original_id: int
+:ivar tsig_error: TSIG error code; default is 0.
+:type tsig_error: int
+:ivar other_data: TSIG other data.
+:type other_data: string
+:ivar mac: The TSIG MAC for this message.
+:type mac: string
+:ivar xfr: Is the message being used to contain the results of a DNS
+zone transfer?  The default is False.
+:type xfr: bool
+:ivar origin: The origin of the zone in messages which are used for
+zone transfers or for DNS dynamic updates.  The default is None.
+:type origin: dns.name.Name object
+:ivar tsig_ctx: The TSIG signature context associated with this
+message.  The default is None.
+:type tsig_ctx: hmac.HMAC object
+:ivar had_tsig: Did the message decoded from wire format have a TSIG
+signature?
+:type had_tsig: bool
+:ivar multi: Is this message part of a multi-message sequence?  The
+default is false.  This variable is used when validating TSIG signatures
+on messages which are part of a zone transfer.
+:type multi: bool
+:ivar first: Is this message standalone, or the first of a multi
+message sequence?  This variable is used when validating TSIG signatures
+on messages which are part of a zone transfer.
+:type first: bool
+:ivar index: An index of rrsets in the message.  The index key is
+(section, name, rdclass, rdtype, covers, deleting).  Indexing can be
+disabled by setting the index to None.
+:type index: dict</p>
+<dl class="method">
+<dt id="dns.message.Message.find_rrset">
+<tt class="descname">find_rrset</tt><big>(</big><em>section</em>, <em>name</em>, <em>rdclass</em>, <em>rdtype</em>, <em>covers=0</em>, <em>deleting=None</em>, <em>create=False</em>, <em>force_unique=False</em><big>)</big><a class="headerlink" href="#dns.message.Message.find_rrset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the RRset with the given attributes in the specified section.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>section</strong> &#8211; the section of the message to look in, e.g.</td>
+</tr>
+</tbody>
+</table>
+<p>self.answer.
+:type section: list of dns.rrset.RRset objects
+:param name: the name of the RRset
+:type name: dns.name.Name object
+:param rdclass: the class of the RRset
+:type rdclass: int
+:param rdtype: the type of the RRset
+:type rdtype: int
+:param covers: the covers value of the RRset
+:type covers: int
+:param deleting: the deleting value of the RRset
+:type deleting: int
+:param create: If True, create the RRset if it is not found.
+The created RRset is appended to I{section}.
+:type create: bool
+:param force_unique: If True and create is also True, create a
+new RRset regardless of whether a matching RRset exists already.
+:type force_unique: bool
+:raises KeyError: the RRset was not found and create was False
+:rtype: dns.rrset.RRset object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.message.Message.get_rrset">
+<tt class="descname">get_rrset</tt><big>(</big><em>section</em>, <em>name</em>, <em>rdclass</em>, <em>rdtype</em>, <em>covers=0</em>, <em>deleting=None</em>, <em>create=False</em>, <em>force_unique=False</em><big>)</big><a class="headerlink" href="#dns.message.Message.get_rrset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the RRset with the given attributes in the specified section.</p>
+<p>If the RRset is not found, None is returned.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>section</strong> &#8211; the section of the message to look in, e.g.</td>
+</tr>
+</tbody>
+</table>
+<p>self.answer.
+:type section: list of dns.rrset.RRset objects
+:param name: the name of the RRset
+:type name: dns.name.Name object
+:param rdclass: the class of the RRset
+:type rdclass: int
+:param rdtype: the type of the RRset
+:type rdtype: int
+:param covers: the covers value of the RRset
+:type covers: int
+:param deleting: the deleting value of the RRset
+:type deleting: int
+:param create: If True, create the RRset if it is not found.
+The created RRset is appended to I{section}.
+:type create: bool
+:param force_unique: If True and create is also True, create a
+new RRset regardless of whether a matching RRset exists already.
+:type force_unique: bool
+:rtype: dns.rrset.RRset object or None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.message.Message.is_response">
+<tt class="descname">is_response</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#dns.message.Message.is_response" title="Permalink to this definition">¶</a></dt>
+<dd><p>Is other a response to self?
+:rtype: bool</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.message.Message.opcode">
+<tt class="descname">opcode</tt><big>(</big><big>)</big><a class="headerlink" href="#dns.message.Message.opcode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the opcode.
+:rtype: int</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.message.Message.rcode">
+<tt class="descname">rcode</tt><big>(</big><big>)</big><a class="headerlink" href="#dns.message.Message.rcode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the rcode.
+:rtype: int</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.message.Message.set_opcode">
+<tt class="descname">set_opcode</tt><big>(</big><em>opcode</em><big>)</big><a class="headerlink" href="#dns.message.Message.set_opcode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the opcode.
+:param opcode: the opcode
+:type opcode: int</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.message.Message.set_rcode">
+<tt class="descname">set_rcode</tt><big>(</big><em>rcode</em><big>)</big><a class="headerlink" href="#dns.message.Message.set_rcode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the rcode.
+:param rcode: the rcode
+:type rcode: int</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.message.Message.to_text">
+<tt class="descname">to_text</tt><big>(</big><em>origin=None</em>, <em>relativize=True</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#dns.message.Message.to_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the message to text.</p>
+<p>The I{origin}, I{relativize}, and any other keyword
+arguments are passed to the rrset to_wire() method.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">string</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.message.Message.to_wire">
+<tt class="descname">to_wire</tt><big>(</big><em>origin=None</em>, <em>max_size=0</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#dns.message.Message.to_wire" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a string containing the message in DNS compressed wire
+format.</p>
+<p>Additional keyword arguments are passed to the rrset to_wire()
+method.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>origin</strong> (<em>dns.name.Name object</em>) &#8211; The origin to be appended to any relative names.</li>
+<li><strong>max_size</strong> &#8211; The maximum size of the wire format output; default</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>is 0, which means &#8216;the message&#8217;s request payload, if nonzero, or
+65536&#8217;.
+:type max_size: int
+:raises dns.exception.TooBig: max_size was exceeded
+:rtype: string</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.message.Message.use_edns">
+<tt class="descname">use_edns</tt><big>(</big><em>edns=0</em>, <em>ednsflags=0</em>, <em>payload=1280</em>, <em>request_payload=None</em>, <em>options=None</em><big>)</big><a class="headerlink" href="#dns.message.Message.use_edns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Configure EDNS behavior.
+:param edns: The EDNS level to use.  Specifying None, False, or -1
+means &#8216;do not use EDNS&#8217;, and in this case the other parameters are
+ignored.  Specifying True is equivalent to specifying 0, i.e. &#8216;use
+EDNS0&#8217;.
+:type edns: int or bool or None
+:param ednsflags: EDNS flag values.
+:type ednsflags: int
+:param payload: The EDNS sender&#8217;s payload field, which is the maximum
+size of UDP datagram the sender can handle.
+:type payload: int
+:param request_payload: The EDNS payload size to use when sending
+this message.  If not specified, defaults to the value of payload.
+:type request_payload: int or None
+:param options: The EDNS options
+:type options: None or list of dns.edns.Option objects
+&#64;see: RFC 2671</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.message.Message.use_tsig">
+<tt class="descname">use_tsig</tt><big>(</big><em>keyring</em>, <em>keyname=None</em>, <em>fudge=300</em>, <em>original_id=None</em>, <em>tsig_error=0</em>, <em>other_data=''</em>, <em>algorithm=&lt;DNS name HMAC-MD5.SIG-ALG.REG.INT.&gt;</em><big>)</big><a class="headerlink" href="#dns.message.Message.use_tsig" title="Permalink to this definition">¶</a></dt>
+<dd><p>When sending, a TSIG signature using the specified keyring
+and keyname should be added.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>keyring</strong> (<a class="reference external" href="http://docs.python.org/library/stdtypes.html#dict" title="(in Python v2.7)"><em>dict</em></a>) &#8211; The TSIG keyring to use; defaults to None.</li>
+<li><strong>keyname</strong> &#8211; The name of the TSIG key to use; defaults to None.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The key must be defined in the keyring.  If a keyring is specified
+but a keyname is not, then the key used will be the first key in the
+keyring.  Note that the order of keys in a dictionary is not defined,
+so applications should supply a keyname when a keyring is used, unless
+they know the keyring contains only one key.
+:type keyname: dns.name.Name or string
+:param fudge: TSIG time fudge; default is 300 seconds.
+:type fudge: int
+:param original_id: TSIG original id; defaults to the message&#8217;s id
+:type original_id: int
+:param tsig_error: TSIG error code; default is 0.
+:type tsig_error: int
+:param other_data: TSIG other data.
+:type other_data: string
+:param algorithm: The TSIG algorithm to use; defaults to
+dns.tsig.default_algorithm</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.message.Message.want_dnssec">
+<tt class="descname">want_dnssec</tt><big>(</big><em>wanted=True</em><big>)</big><a class="headerlink" href="#dns.message.Message.want_dnssec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enable or disable &#8216;DNSSEC desired&#8217; flag in requests.
+:param wanted: Is DNSSEC desired?  If True, EDNS is enabled if
+required, and then the DO bit is set.  If False, the DO bit is
+cleared if EDNS is enabled.
+:type wanted: bool</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="dns.message.ShortHeader">
+<em class="property">exception </em><tt class="descclassname">dns.message.</tt><tt class="descname">ShortHeader</tt><a class="headerlink" href="#dns.message.ShortHeader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">dns.exception.FormError</span></tt></p>
+<p>Raised if the DNS packet passed to from_wire() is too short.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="dns.message.TrailingJunk">
+<em class="property">exception </em><tt class="descclassname">dns.message.</tt><tt class="descname">TrailingJunk</tt><a class="headerlink" href="#dns.message.TrailingJunk" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">dns.exception.FormError</span></tt></p>
+<p>Raised if the DNS packet passed to from_wire() has extra junk
+at the end of it.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="dns.message.UnknownHeaderField">
+<em class="property">exception </em><tt class="descclassname">dns.message.</tt><tt class="descname">UnknownHeaderField</tt><a class="headerlink" href="#dns.message.UnknownHeaderField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">dns.exception.DNSException</span></tt></p>
+<p>Raised if a header field name is not recognized when converting from
+text into a message.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="dns.message.UnknownTSIGKey">
+<em class="property">exception </em><tt class="descclassname">dns.message.</tt><tt class="descname">UnknownTSIGKey</tt><a class="headerlink" href="#dns.message.UnknownTSIGKey" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">dns.exception.DNSException</span></tt></p>
+<p>Raised if we got a TSIG but don&#8217;t know the key.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.message.from_file">
+<tt class="descclassname">dns.message.</tt><tt class="descname">from_file</tt><big>(</big><em>f</em><big>)</big><a class="headerlink" href="#dns.message.from_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the next text format message from the specified file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>f</strong> &#8211; file or string.  If I{f} is a string, it is treated</td>
+</tr>
+</tbody>
+</table>
+<p>as the name of a file to open.
+:raises UnknownHeaderField:
+:raises dns.exception.SyntaxError:
+:rtype: dns.message.Message object</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.message.from_text">
+<tt class="descclassname">dns.message.</tt><tt class="descname">from_text</tt><big>(</big><em>text</em><big>)</big><a class="headerlink" href="#dns.message.from_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the text format message into a message object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>text</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; The text format message.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first simple">
+<li><strong>UnknownHeaderField</strong> &#8211; </li>
+<li><strong>dns.exception.SyntaxError</strong> &#8211; </li>
+</ul>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dns.message.Message object</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.message.from_wire">
+<tt class="descclassname">dns.message.</tt><tt class="descname">from_wire</tt><big>(</big><em>wire</em>, <em>keyring=None</em>, <em>request_mac=''</em>, <em>xfr=False</em>, <em>origin=None</em>, <em>tsig_ctx=None</em>, <em>multi=False</em>, <em>first=True</em>, <em>question_only=False</em>, <em>one_rr_per_rrset=False</em>, <em>ignore_trailing=False</em><big>)</big><a class="headerlink" href="#dns.message.from_wire" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a DNS wire format message into a message
+object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>keyring</strong> (<a class="reference external" href="http://docs.python.org/library/stdtypes.html#dict" title="(in Python v2.7)"><em>dict</em></a>) &#8211; The keyring to use if the message is signed.</li>
+<li><strong>request_mac</strong> &#8211; If the message is a response to a TSIG-signed request,</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>I{request_mac} should be set to the MAC of that request.
+:type request_mac: string
+:param xfr: Is this message part of a zone transfer?
+:type xfr: bool
+:param origin: If the message is part of a zone transfer, I{origin}
+should be the origin name of the zone.
+:type origin: dns.name.Name object
+:param tsig_ctx: The ongoing TSIG context, used when validating zone
+transfers.
+:type tsig_ctx: hmac.HMAC object
+:param multi: Is this message part of a multiple message sequence?
+:type multi: bool
+:param first: Is this message standalone, or the first of a multi
+message sequence?
+:type first: bool
+:param question_only: Read only up to the end of the question section?
+:type question_only: bool
+:param one_rr_per_rrset: Put each RR into its own RRset
+:type one_rr_per_rrset: bool
+:param ignore_trailing: Ignore trailing junk at end of request?
+:type ignore_trailing: bool
+:raises ShortHeader: The message is less than 12 octets long.
+:raises TrailingJunk: There were octets in the message past the end
+of the proper DNS message.
+:raises BadEDNS: An OPT record was in the wrong section, or occurred more
+than once.
+:raises BadTSIG: A TSIG record was not the last record of the additional
+data section.
+:rtype: dns.message.Message object</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.message.make_query">
+<tt class="descclassname">dns.message.</tt><tt class="descname">make_query</tt><big>(</big><em>qname</em>, <em>rdtype</em>, <em>rdclass=1</em>, <em>use_edns=None</em>, <em>want_dnssec=False</em>, <em>ednsflags=0</em>, <em>payload=1280</em>, <em>request_payload=None</em>, <em>options=None</em><big>)</big><a class="headerlink" href="#dns.message.make_query" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a query message.</p>
+<p>The query name, type, and class may all be specified either
+as objects of the appropriate type, or as strings.</p>
+<p>The query will have a randomly choosen query id, and its DNS flags
+will be set to dns.flags.RD.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>qname</strong> (<em>dns.name.Name object or string</em>) &#8211; The query name.</li>
+<li><strong>rdtype</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The desired rdata type.</li>
+<li><strong>rdclass</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The desired rdata class; the default is class IN.</li>
+<li><strong>use_edns</strong> &#8211; The EDNS level to use; the default is None (no EDNS).</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>See the description of dns.message.Message.use_edns() for the possible
+values for use_edns and their meanings.
+:type use_edns: int or bool or None
+:param want_dnssec: Should the query indicate that DNSSEC is desired?
+:type want_dnssec: bool
+:param ednsflags: EDNS flag values.
+:type ednsflags: int
+:param payload: The EDNS sender&#8217;s payload field, which is the maximum
+size of UDP datagram the sender can handle.
+:type payload: int
+:param request_payload: The EDNS payload size to use when sending
+this message.  If not specified, defaults to the value of payload.
+:type request_payload: int or None
+:param options: The EDNS options
+:type options: None or list of dns.edns.Option objects
+&#64;see: RFC 2671
+:rtype: dns.message.Message object</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.message.make_response">
+<tt class="descclassname">dns.message.</tt><tt class="descname">make_response</tt><big>(</big><em>query</em>, <em>recursion_available=False</em>, <em>our_payload=8192</em><big>)</big><a class="headerlink" href="#dns.message.make_response" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a message which is a response for the specified query.
+The message returned is really a response skeleton; it has all
+of the infrastructure required of a response, but none of the
+content.</p>
+<p>The response&#8217;s question section is a shallow copy of the query&#8217;s
+question section, so the query&#8217;s question RRsets should not be
+changed.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>query</strong> (<em>dns.message.Message object</em>) &#8211; the query to respond to</li>
+<li><strong>recursion_available</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; should RA be set in the response?</li>
+<li><strong>our_payload</strong> &#8211; payload size to advertise in EDNS responses; default</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>is 8192.
+:type our_payload: int
+:rtype: dns.message.Message object</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-dns.zone">
+<span id="dns-zone"></span><h2>DNS Zone<a class="headerlink" href="#module-dns.zone" title="Permalink to this headline">¶</a></h2>
+<p>DNS Zones.</p>
+<dl class="exception">
+<dt id="dns.zone.BadZone">
+<em class="property">exception </em><tt class="descclassname">dns.zone.</tt><tt class="descname">BadZone</tt><a class="headerlink" href="#dns.zone.BadZone" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">dns.exception.DNSException</span></tt></p>
+<p>The zone is malformed.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="dns.zone.NoNS">
+<em class="property">exception </em><tt class="descclassname">dns.zone.</tt><tt class="descname">NoNS</tt><a class="headerlink" href="#dns.zone.NoNS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dns.zone.BadZone" title="dns.zone.BadZone"><tt class="xref py py-class docutils literal"><span class="pre">dns.zone.BadZone</span></tt></a></p>
+<p>The zone has no NS RRset at its origin.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="dns.zone.NoSOA">
+<em class="property">exception </em><tt class="descclassname">dns.zone.</tt><tt class="descname">NoSOA</tt><a class="headerlink" href="#dns.zone.NoSOA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dns.zone.BadZone" title="dns.zone.BadZone"><tt class="xref py py-class docutils literal"><span class="pre">dns.zone.BadZone</span></tt></a></p>
+<p>The zone has no SOA RR at its origin.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="dns.zone.UnknownOrigin">
+<em class="property">exception </em><tt class="descclassname">dns.zone.</tt><tt class="descname">UnknownOrigin</tt><a class="headerlink" href="#dns.zone.UnknownOrigin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dns.zone.BadZone" title="dns.zone.BadZone"><tt class="xref py py-class docutils literal"><span class="pre">dns.zone.BadZone</span></tt></a></p>
+<p>The zone&#8217;s origin is unknown.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="dns.zone.Zone">
+<em class="property">class </em><tt class="descclassname">dns.zone.</tt><tt class="descname">Zone</tt><big>(</big><em>origin</em>, <em>rdclass=1</em>, <em>relativize=True</em><big>)</big><a class="headerlink" href="#dns.zone.Zone" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>A DNS zone.</p>
+<p>A Zone is a mapping from names to nodes.  The zone object may be
+treated like a Python dictionary, e.g. zone[name] will retrieve
+the node associated with that name.  The I{name} may be a
+dns.name.Name object, or it may be a string.  In the either case,
+if the name is relative it is treated as relative to the origin of
+the zone.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><strong>rdclass</strong> &#8211; The zone&#8217;s rdata class; the default is class IN.</li>
+<li><strong>origin</strong> &#8211; The origin of the zone.</li>
+<li><strong>nodes</strong> &#8211; A dictionary mapping the names of nodes in the zone to the</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>nodes themselves.
+:type nodes: dict
+:ivar relativize: should names in the zone be relativized?
+:type relativize: bool
+&#64;cvar node_factory: the factory used to create a new node
+:type node_factory: class or callable</p>
+<dl class="method">
+<dt id="dns.zone.Zone.check_origin">
+<tt class="descname">check_origin</tt><big>(</big><big>)</big><a class="headerlink" href="#dns.zone.Zone.check_origin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Do some simple checking of the zone&#8217;s origin.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><a class="reference internal" href="#dns.zone.NoSOA" title="dns.zone.NoSOA"><strong>dns.zone.NoSOA</strong></a> &#8211; there is no SOA RR</li>
+<li><a class="reference internal" href="#dns.zone.NoNS" title="dns.zone.NoNS"><strong>dns.zone.NoNS</strong></a> &#8211; there is no NS RRset</li>
+<li><strong>KeyError</strong> &#8211; there is no origin node</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.zone.Zone.delete_node">
+<tt class="descname">delete_node</tt><big>(</big><em>name</em><big>)</big><a class="headerlink" href="#dns.zone.Zone.delete_node" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete the specified node if it exists.</p>
+<p>It is not an error if the node does not exist.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.zone.Zone.delete_rdataset">
+<tt class="descname">delete_rdataset</tt><big>(</big><em>name</em>, <em>rdtype</em>, <em>covers=0</em><big>)</big><a class="headerlink" href="#dns.zone.Zone.delete_rdataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete the rdataset matching I{rdtype} and I{covers}, if it
+exists at the node specified by I{name}.</p>
+<p>The I{name}, I{rdtype}, and I{covers} parameters may be
+strings, in which case they will be converted to their proper
+type.</p>
+<p>It is not an error if the node does not exist, or if there is no
+matching rdataset at the node.</p>
+<p>If the node has no rdatasets after the deletion, it will itself
+be deleted.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> (<em>DNS.name.Name object or string</em>) &#8211; the owner name to look for</li>
+<li><strong>rdtype</strong> (<em>int or string</em>) &#8211; the rdata type desired</li>
+<li><strong>covers</strong> (<em>int or string</em>) &#8211; the covered type (defaults to None)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.zone.Zone.find_node">
+<tt class="descname">find_node</tt><big>(</big><em>name</em>, <em>create=False</em><big>)</big><a class="headerlink" href="#dns.zone.Zone.find_node" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find a node in the zone, possibly creating it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> (<em>dns.name.Name object or string</em>) &#8211; the name of the node to find</li>
+<li><strong>create</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; should the node be created if it doesn&#8217;t exist?</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Raises KeyError:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body"><p class="first">the name is not known and create was not specified.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dns.node.Node object</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.zone.Zone.find_rdataset">
+<tt class="descname">find_rdataset</tt><big>(</big><em>name</em>, <em>rdtype</em>, <em>covers=0</em>, <em>create=False</em><big>)</big><a class="headerlink" href="#dns.zone.Zone.find_rdataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Look for rdata with the specified name and type in the zone,
+and return an rdataset encapsulating it.</p>
+<p>The I{name}, I{rdtype}, and I{covers} parameters may be
+strings, in which case they will be converted to their proper
+type.</p>
+<p>The rdataset returned is not a copy; changes to it will change
+the zone.</p>
+<p>KeyError is raised if the name or type are not found.
+Use L{get_rdataset} if you want to have None returned instead.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> (<em>DNS.name.Name object or string</em>) &#8211; the owner name to look for</li>
+<li><strong>rdtype</strong> (<em>int or string</em>) &#8211; the rdata type desired</li>
+<li><strong>covers</strong> (<em>int or string</em>) &#8211; the covered type (defaults to None)</li>
+<li><strong>create</strong> &#8211; should the node and rdataset be created if they do not</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>exist?
+:type create: bool
+:raises KeyError: the node or rdata could not be found
+:rtype: dns.rrset.RRset object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.zone.Zone.find_rrset">
+<tt class="descname">find_rrset</tt><big>(</big><em>name</em>, <em>rdtype</em>, <em>covers=0</em><big>)</big><a class="headerlink" href="#dns.zone.Zone.find_rrset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Look for rdata with the specified name and type in the zone,
+and return an RRset encapsulating it.</p>
+<p>The I{name}, I{rdtype}, and I{covers} parameters may be
+strings, in which case they will be converted to their proper
+type.</p>
+<p>This method is less efficient than the similar
+L{find_rdataset} because it creates an RRset instead of
+returning the matching rdataset.  It may be more convenient
+for some uses since it returns an object which binds the owner
+name to the rdata.</p>
+<p>This method may not be used to create new nodes or rdatasets;
+use L{find_rdataset} instead.</p>
+<p>KeyError is raised if the name or type are not found.
+Use L{get_rrset} if you want to have None returned instead.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> (<em>DNS.name.Name object or string</em>) &#8211; the owner name to look for</li>
+<li><strong>rdtype</strong> (<em>int or string</em>) &#8211; the rdata type desired</li>
+<li><strong>covers</strong> (<em>int or string</em>) &#8211; the covered type (defaults to None)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Raises KeyError:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body"><p class="first">the node or rdata could not be found</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dns.rrset.RRset object</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.zone.Zone.get_node">
+<tt class="descname">get_node</tt><big>(</big><em>name</em>, <em>create=False</em><big>)</big><a class="headerlink" href="#dns.zone.Zone.get_node" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a node in the zone, possibly creating it.</p>
+<p>This method is like L{find_node}, except it returns None instead
+of raising an exception if the node does not exist and creation
+has not been requested.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> (<em>dns.name.Name object or string</em>) &#8211; the name of the node to find</li>
+<li><strong>create</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; should the node be created if it doesn&#8217;t exist?</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dns.node.Node object or None</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.zone.Zone.get_rdataset">
+<tt class="descname">get_rdataset</tt><big>(</big><em>name</em>, <em>rdtype</em>, <em>covers=0</em>, <em>create=False</em><big>)</big><a class="headerlink" href="#dns.zone.Zone.get_rdataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Look for rdata with the specified name and type in the zone,
+and return an rdataset encapsulating it.</p>
+<p>The I{name}, I{rdtype}, and I{covers} parameters may be
+strings, in which case they will be converted to their proper
+type.</p>
+<p>The rdataset returned is not a copy; changes to it will change
+the zone.</p>
+<p>None is returned if the name or type are not found.
+Use L{find_rdataset} if you want to have KeyError raised instead.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> (<em>DNS.name.Name object or string</em>) &#8211; the owner name to look for</li>
+<li><strong>rdtype</strong> (<em>int or string</em>) &#8211; the rdata type desired</li>
+<li><strong>covers</strong> (<em>int or string</em>) &#8211; the covered type (defaults to None)</li>
+<li><strong>create</strong> &#8211; should the node and rdataset be created if they do not</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>exist?
+:type create: bool
+:rtype: dns.rrset.RRset object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.zone.Zone.get_rrset">
+<tt class="descname">get_rrset</tt><big>(</big><em>name</em>, <em>rdtype</em>, <em>covers=0</em><big>)</big><a class="headerlink" href="#dns.zone.Zone.get_rrset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Look for rdata with the specified name and type in the zone,
+and return an RRset encapsulating it.</p>
+<p>The I{name}, I{rdtype}, and I{covers} parameters may be
+strings, in which case they will be converted to their proper
+type.</p>
+<p>This method is less efficient than the similar L{get_rdataset}
+because it creates an RRset instead of returning the matching
+rdataset.  It may be more convenient for some uses since it
+returns an object which binds the owner name to the rdata.</p>
+<p>This method may not be used to create new nodes or rdatasets;
+use L{find_rdataset} instead.</p>
+<p>None is returned if the name or type are not found.
+Use L{find_rrset} if you want to have KeyError raised instead.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> (<em>DNS.name.Name object or string</em>) &#8211; the owner name to look for</li>
+<li><strong>rdtype</strong> (<em>int or string</em>) &#8211; the rdata type desired</li>
+<li><strong>covers</strong> (<em>int or string</em>) &#8211; the covered type (defaults to None)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dns.rrset.RRset object</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.zone.Zone.iterate_rdatas">
+<tt class="descname">iterate_rdatas</tt><big>(</big><em>rdtype=255</em>, <em>covers=0</em><big>)</big><a class="headerlink" href="#dns.zone.Zone.iterate_rdatas" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a generator which yields (name, ttl, rdata) tuples for
+all rdatas in the zone which have the specified I{rdtype}
+and I{covers}.  If I{rdtype} is dns.rdatatype.ANY, the default,
+then all rdatas will be matched.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>rdtype</strong> (<em>int or string</em>) &#8211; int or string</li>
+<li><strong>covers</strong> (<em>int or string</em>) &#8211; the covered type (defaults to None)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.zone.Zone.iterate_rdatasets">
+<tt class="descname">iterate_rdatasets</tt><big>(</big><em>rdtype=255</em>, <em>covers=0</em><big>)</big><a class="headerlink" href="#dns.zone.Zone.iterate_rdatasets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a generator which yields (name, rdataset) tuples for
+all rdatasets in the zone which have the specified I{rdtype}
+and I{covers}.  If I{rdtype} is dns.rdatatype.ANY, the default,
+then all rdatasets will be matched.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>rdtype</strong> (<em>int or string</em>) &#8211; int or string</li>
+<li><strong>covers</strong> (<em>int or string</em>) &#8211; the covered type (defaults to None)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dns.zone.Zone.node_factory">
+<tt class="descname">node_factory</tt><a class="headerlink" href="#dns.zone.Zone.node_factory" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">Node</span></tt></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.zone.Zone.replace_rdataset">
+<tt class="descname">replace_rdataset</tt><big>(</big><em>name</em>, <em>replacement</em><big>)</big><a class="headerlink" href="#dns.zone.Zone.replace_rdataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Replace an rdataset at name.</p>
+<p>It is not an error if there is no rdataset matching I{replacement}.</p>
+<p>Ownership of the I{replacement} object is transferred to the zone;
+in other words, this method does not store a copy of I{replacement}
+at the node, it stores I{replacement} itself.</p>
+<p>If the I{name} node does not exist, it is created.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> (<em>DNS.name.Name object or string</em>) &#8211; the owner name</li>
+<li><strong>replacement</strong> (<a class="reference internal" href="#dns.rdataset.Rdataset" title="dns.rdataset.Rdataset"><em>dns.rdataset.Rdataset</em></a>) &#8211; the replacement rdataset</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.zone.Zone.to_file">
+<tt class="descname">to_file</tt><big>(</big><em>f</em>, <em>sorted=True</em>, <em>relativize=True</em>, <em>nl=None</em><big>)</big><a class="headerlink" href="#dns.zone.Zone.to_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a zone to a file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>f</strong> &#8211; file or string.  If I{f} is a string, it is treated</td>
+</tr>
+</tbody>
+</table>
+<p>as the name of a file to open.
+:param sorted: if True, the file will be written with the
+names sorted in DNSSEC order from least to greatest.  Otherwise
+the names will be written in whatever order they happen to have
+in the zone&#8217;s dictionary.
+:param relativize: if True, domain names in the output will be
+relativized to the zone&#8217;s origin (if possible).
+:type relativize: bool
+:param nl: The end of line string.  If not specified, the
+output will use the platform&#8217;s native end-of-line marker (i.e.
+LF on POSIX, CRLF on Windows, CR on Macintosh).
+:type nl: string or None</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.zone.from_file">
+<tt class="descclassname">dns.zone.</tt><tt class="descname">from_file</tt><big>(</big><em>f</em>, <em>origin=None</em>, <em>rdclass=1</em>, <em>relativize=True</em>, <em>zone_factory=&lt;class 'dns.zone.Zone'&gt;</em>, <em>filename=None</em>, <em>allow_include=True</em>, <em>check_origin=True</em><big>)</big><a class="headerlink" href="#dns.zone.from_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a master file and build a zone object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>f</strong> &#8211; file or string.  If I{f} is a string, it is treated</td>
+</tr>
+</tbody>
+</table>
+<p>as the name of a file to open.
+:param origin: The origin of the zone; if not specified, the first
+$ORIGIN statement in the master file will determine the origin of the
+zone.
+:type origin: dns.name.Name object or string
+:param rdclass: The zone&#8217;s rdata class; the default is class IN.
+:type rdclass: int
+:param relativize: should names be relativized?  The default is True
+:type relativize: bool
+:param zone_factory: The zone factory to use
+:type zone_factory: function returning a Zone
+:param filename: The filename to emit when describing where an error
+occurred; the default is &#8216;&lt;file&gt;&#8217;, or the value of I{f} if I{f} is a
+string.
+:type filename: string
+:param allow_include: is $INCLUDE allowed?
+:type allow_include: bool
+:param check_origin: should sanity checks of the origin node be done?
+The default is True.
+:type check_origin: bool
+:raises dns.zone.NoSOA: No SOA RR was found at the zone origin
+:raises dns.zone.NoNS: No NS RRset was found at the zone origin
+:rtype: dns.zone.Zone object</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.zone.from_text">
+<tt class="descclassname">dns.zone.</tt><tt class="descname">from_text</tt><big>(</big><em>text</em>, <em>origin=None</em>, <em>rdclass=1</em>, <em>relativize=True</em>, <em>zone_factory=&lt;class 'dns.zone.Zone'&gt;</em>, <em>filename=None</em>, <em>allow_include=False</em>, <em>check_origin=True</em><big>)</big><a class="headerlink" href="#dns.zone.from_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build a zone object from a master file format string.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>text</strong> (<em>string.</em>) &#8211; the master file format input</li>
+<li><strong>origin</strong> &#8211; The origin of the zone; if not specified, the first</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>$ORIGIN statement in the master file will determine the origin of the
+zone.
+:type origin: dns.name.Name object or string
+:param rdclass: The zone&#8217;s rdata class; the default is class IN.
+:type rdclass: int
+:param relativize: should names be relativized?  The default is True
+:type relativize: bool
+:param zone_factory: The zone factory to use
+:type zone_factory: function returning a Zone
+:param filename: The filename to emit when describing where an error
+occurred; the default is &#8216;&lt;string&gt;&#8217;.
+:type filename: string
+:param allow_include: is $INCLUDE allowed?
+:type allow_include: bool
+:param check_origin: should sanity checks of the origin node be done?
+The default is True.
+:type check_origin: bool
+:raises dns.zone.NoSOA: No SOA RR was found at the zone origin
+:raises dns.zone.NoNS: No NS RRset was found at the zone origin
+:rtype: dns.zone.Zone object</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.zone.from_xfr">
+<tt class="descclassname">dns.zone.</tt><tt class="descname">from_xfr</tt><big>(</big><em>xfr</em>, <em>zone_factory=&lt;class 'dns.zone.Zone'&gt;</em>, <em>relativize=True</em>, <em>check_origin=True</em><big>)</big><a class="headerlink" href="#dns.zone.from_xfr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the output of a zone transfer generator into a zone object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>xfr</strong> (<em>generator of dns.message.Message objects</em>) &#8211; The xfr generator</li>
+<li><strong>relativize</strong> &#8211; should names be relativized?  The default is True.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>It is essential that the relativize setting matches the one specified
+to dns.query.xfr().
+:type relativize: bool
+:param check_origin: should sanity checks of the origin node be done?
+The default is True.
+:type check_origin: bool
+:raises dns.zone.NoSOA: No SOA RR was found at the zone origin
+:raises dns.zone.NoNS: No NS RRset was found at the zone origin
+:rtype: dns.zone.Zone object</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-dns.rdata">
+<span id="rdata"></span><h2>RDATA<a class="headerlink" href="#module-dns.rdata" title="Permalink to this headline">¶</a></h2>
+<p>DNS rdata.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">var _rdata_modules:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">A dictionary mapping a (rdclass, rdtype) tuple to</td>
+</tr>
+</tbody>
+</table>
+<p>the module which implements that type.
+:type _rdata_modules: dict
+:var _module_prefix: The prefix to use when forming modules names.  The
+default is &#8216;dns.rdtypes&#8217;.  Changing this value will break the library.
+:type _module_prefix: string
+:var _hex_chunk: At most this many octets that will be represented in each
+chunk of hexstring that _hexify() produces before whitespace occurs.
+:type _hex_chunk: int</p>
+<dl class="class">
+<dt id="dns.rdata.GenericRdata">
+<em class="property">class </em><tt class="descclassname">dns.rdata.</tt><tt class="descname">GenericRdata</tt><big>(</big><em>rdclass</em>, <em>rdtype</em>, <em>data</em><big>)</big><a class="headerlink" href="#dns.rdata.GenericRdata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dns.rdata.Rdata" title="dns.rdata.Rdata"><tt class="xref py py-class docutils literal"><span class="pre">dns.rdata.Rdata</span></tt></a></p>
+<p>Generate Rdata Class</p>
+<p>This class is used for rdata types for which we have no better
+implementation.  It implements the DNS &#8220;unknown RRs&#8221; scheme.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="dns.rdata.Rdata">
+<em class="property">class </em><tt class="descclassname">dns.rdata.</tt><tt class="descname">Rdata</tt><big>(</big><em>rdclass</em>, <em>rdtype</em><big>)</big><a class="headerlink" href="#dns.rdata.Rdata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>Base class for all DNS rdata types.</p>
+<dl class="method">
+<dt id="dns.rdata.Rdata.choose_relativity">
+<tt class="descname">choose_relativity</tt><big>(</big><em>origin=None</em>, <em>relativize=True</em><big>)</big><a class="headerlink" href="#dns.rdata.Rdata.choose_relativity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert any domain names in the rdata to the specified
+relativization.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.rdata.Rdata.covers">
+<tt class="descname">covers</tt><big>(</big><big>)</big><a class="headerlink" href="#dns.rdata.Rdata.covers" title="Permalink to this definition">¶</a></dt>
+<dd><p>DNS SIG/RRSIG rdatas apply to a specific type; this type is
+returned by the covers() function.  If the rdata type is not
+SIG or RRSIG, dns.rdatatype.NONE is returned.  This is useful when
+creating rdatasets, allowing the rdataset to contain only RRSIGs
+of a particular type, e.g. RRSIG(NS).
+:rtype: int</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.rdata.Rdata.extended_rdatatype">
+<tt class="descname">extended_rdatatype</tt><big>(</big><big>)</big><a class="headerlink" href="#dns.rdata.Rdata.extended_rdatatype" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a 32-bit type value, the least significant 16 bits of
+which are the ordinary DNS type, and the upper 16 bits of which are
+the &#8220;covered&#8221; type, if any.
+:rtype: int</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="dns.rdata.Rdata.from_text">
+<em class="property">classmethod </em><tt class="descname">from_text</tt><big>(</big><em>rdclass</em>, <em>rdtype</em>, <em>tok</em>, <em>origin=None</em>, <em>relativize=True</em><big>)</big><a class="headerlink" href="#dns.rdata.Rdata.from_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build an rdata object from text format.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>rdclass</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The rdata class</li>
+<li><strong>rdtype</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The rdata type</li>
+<li><strong>tok</strong> (<em>dns.tokenizer.Tokenizer</em>) &#8211; The tokenizer</li>
+<li><strong>origin</strong> (<a class="reference internal" href="#dns.name.Name" title="dns.name.Name"><em>dns.name.Name</em></a>) &#8211; The origin to use for relative names</li>
+<li><strong>relativize</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; should names be relativized?</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dns.rdata.Rdata instance</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="dns.rdata.Rdata.from_wire">
+<em class="property">classmethod </em><tt class="descname">from_wire</tt><big>(</big><em>rdclass</em>, <em>rdtype</em>, <em>wire</em>, <em>current</em>, <em>rdlen</em>, <em>origin=None</em><big>)</big><a class="headerlink" href="#dns.rdata.Rdata.from_wire" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build an rdata object from wire format</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>rdclass</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The rdata class</li>
+<li><strong>rdtype</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The rdata type</li>
+<li><strong>wire</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; The wire-format message</li>
+<li><strong>current</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The offet in wire of the beginning of the rdata.</li>
+<li><strong>rdlen</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The length of the wire-format rdata</li>
+<li><strong>origin</strong> (<a class="reference internal" href="#dns.name.Name" title="dns.name.Name"><em>dns.name.Name</em></a>) &#8211; The origin to use for relative names</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dns.rdata.Rdata instance</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.rdata.Rdata.to_digestable">
+<tt class="descname">to_digestable</tt><big>(</big><em>origin=None</em><big>)</big><a class="headerlink" href="#dns.rdata.Rdata.to_digestable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert rdata to a format suitable for digesting in hashes.  This
+is also the DNSSEC canonical form.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.rdata.Rdata.to_text">
+<tt class="descname">to_text</tt><big>(</big><em>origin=None</em>, <em>relativize=True</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#dns.rdata.Rdata.to_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert an rdata to text format.
+:rtype: string</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.rdata.Rdata.to_wire">
+<tt class="descname">to_wire</tt><big>(</big><em>file</em>, <em>compress=None</em>, <em>origin=None</em><big>)</big><a class="headerlink" href="#dns.rdata.Rdata.to_wire" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert an rdata to wire format.
+:rtype: string</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.rdata.Rdata.validate">
+<tt class="descname">validate</tt><big>(</big><big>)</big><a class="headerlink" href="#dns.rdata.Rdata.validate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check that the current contents of the rdata&#8217;s fields are
+valid.  If you change an rdata by assigning to its fields,
+it is a good idea to call validate() when you are done making
+changes.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.rdata.from_text">
+<tt class="descclassname">dns.rdata.</tt><tt class="descname">from_text</tt><big>(</big><em>rdclass</em>, <em>rdtype</em>, <em>tok</em>, <em>origin=None</em>, <em>relativize=True</em><big>)</big><a class="headerlink" href="#dns.rdata.from_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build an rdata object from text format.</p>
+<p>This function attempts to dynamically load a class which
+implements the specified rdata class and type.  If there is no
+class-and-type-specific implementation, the GenericRdata class
+is used.</p>
+<p>Once a class is chosen, its from_text() class method is called
+with the parameters to this function.</p>
+<p>If I{tok} is a string, then a tokenizer is created and the string
+is used as its input.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>rdclass</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The rdata class</li>
+<li><strong>rdtype</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The rdata type</li>
+<li><strong>tok</strong> (<em>dns.tokenizer.Tokenizer or string</em>) &#8211; The tokenizer or input text</li>
+<li><strong>origin</strong> (<a class="reference internal" href="#dns.name.Name" title="dns.name.Name"><em>dns.name.Name</em></a>) &#8211; The origin to use for relative names</li>
+<li><strong>relativize</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Should names be relativized?</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dns.rdata.Rdata instance</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.rdata.from_wire">
+<tt class="descclassname">dns.rdata.</tt><tt class="descname">from_wire</tt><big>(</big><em>rdclass</em>, <em>rdtype</em>, <em>wire</em>, <em>current</em>, <em>rdlen</em>, <em>origin=None</em><big>)</big><a class="headerlink" href="#dns.rdata.from_wire" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build an rdata object from wire format</p>
+<p>This function attempts to dynamically load a class which
+implements the specified rdata class and type.  If there is no
+class-and-type-specific implementation, the GenericRdata class
+is used.</p>
+<p>Once a class is chosen, its from_wire() class method is called
+with the parameters to this function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>rdclass</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The rdata class</li>
+<li><strong>rdtype</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The rdata type</li>
+<li><strong>wire</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; The wire-format message</li>
+<li><strong>current</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The offet in wire of the beginning of the rdata.</li>
+<li><strong>rdlen</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The length of the wire-format rdata</li>
+<li><strong>origin</strong> (<a class="reference internal" href="#dns.name.Name" title="dns.name.Name"><em>dns.name.Name</em></a>) &#8211; The origin to use for relative names</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dns.rdata.Rdata instance</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="rdata-class">
+<h2>RDATA class<a class="headerlink" href="#rdata-class" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="module-dns.rdataclass"></span><p>DNS Rdata Classes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">var _by_text:</th><td class="field-body">The rdata class textual name to value mapping</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type _by_text:</th><td class="field-body">dict</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">var _by_value:</th><td class="field-body">The rdata class value to textual name mapping</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type _by_value:</th><td class="field-body">dict</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">var _metaclasses:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">If an rdataclass is a metaclass, there will be a mapping</td>
+</tr>
+</tbody>
+</table>
+<p>whose key is the rdatatype value and whose value is True in this dictionary.
+:type _metaclasses: dict</p>
+<dl class="exception">
+<dt id="dns.rdataclass.UnknownRdataclass">
+<em class="property">exception </em><tt class="descclassname">dns.rdataclass.</tt><tt class="descname">UnknownRdataclass</tt><a class="headerlink" href="#dns.rdataclass.UnknownRdataclass" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">dns.exception.DNSException</span></tt></p>
+<p>Raised when a class is unknown.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.rdataclass.from_text">
+<tt class="descclassname">dns.rdataclass.</tt><tt class="descname">from_text</tt><big>(</big><em>text</em><big>)</big><a class="headerlink" href="#dns.rdataclass.from_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert text into a DNS rdata class value.
+:param text: the text
+:type text: string
+:rtype: int
+:raises dns.rdataclass.UnknownRdataclass: the class is unknown
+:raises ValueError: the rdata class value is not &gt;= 0 and &lt;= 65535</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.rdataclass.is_metaclass">
+<tt class="descclassname">dns.rdataclass.</tt><tt class="descname">is_metaclass</tt><big>(</big><em>rdclass</em><big>)</big><a class="headerlink" href="#dns.rdataclass.is_metaclass" title="Permalink to this definition">¶</a></dt>
+<dd><p>True if the class is a metaclass.
+:param rdclass: the rdata class
+:type rdclass: int
+:rtype: bool</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.rdataclass.to_text">
+<tt class="descclassname">dns.rdataclass.</tt><tt class="descname">to_text</tt><big>(</big><em>value</em><big>)</big><a class="headerlink" href="#dns.rdataclass.to_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a DNS rdata class to text.
+:param value: the rdata class value
+:type value: int
+:rtype: string
+:raises ValueError: the rdata class value is not &gt;= 0 and &lt;= 65535</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-dns.rdataset">
+<span id="rdata-set"></span><h2>RDATA set<a class="headerlink" href="#module-dns.rdataset" title="Permalink to this headline">¶</a></h2>
+<p>DNS rdatasets (an rdataset is a set of rdatas of a given type and class)</p>
+<dl class="exception">
+<dt id="dns.rdataset.DifferingCovers">
+<em class="property">exception </em><tt class="descclassname">dns.rdataset.</tt><tt class="descname">DifferingCovers</tt><a class="headerlink" href="#dns.rdataset.DifferingCovers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">dns.exception.DNSException</span></tt></p>
+<p>Raised if an attempt is made to add a SIG/RRSIG whose covered type
+is not the same as that of the other rdatas in the rdataset.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="dns.rdataset.IncompatibleTypes">
+<em class="property">exception </em><tt class="descclassname">dns.rdataset.</tt><tt class="descname">IncompatibleTypes</tt><a class="headerlink" href="#dns.rdataset.IncompatibleTypes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">dns.exception.DNSException</span></tt></p>
+<p>Raised if an attempt is made to add rdata of an incompatible type.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="dns.rdataset.Rdataset">
+<em class="property">class </em><tt class="descclassname">dns.rdataset.</tt><tt class="descname">Rdataset</tt><big>(</big><em>rdclass</em>, <em>rdtype</em>, <em>covers=0</em><big>)</big><a class="headerlink" href="#dns.rdataset.Rdataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dns.set.Set" title="dns.set.Set"><tt class="xref py py-class docutils literal"><span class="pre">dns.set.Set</span></tt></a></p>
+<p>A DNS rdataset.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><strong>rdclass</strong> &#8211; The class of the rdataset</li>
+<li><strong>rdtype</strong> &#8211; The type of the rdataset</li>
+<li><strong>covers</strong> &#8211; The covered type.  Usually this value is</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>dns.rdatatype.NONE, but if the rdtype is dns.rdatatype.SIG or
+dns.rdatatype.RRSIG, then the covers value will be the rdata
+type the SIG/RRSIG covers.  The library treats the SIG and RRSIG
+types as if they were a family of
+types, e.g. RRSIG(A), RRSIG(NS), RRSIG(SOA).  This makes RRSIGs much
+easier to work with than if RRSIGs covering different rdata
+types were aggregated into a single RRSIG rdataset.
+:type covers: int
+:ivar ttl: The DNS TTL (Time To Live) value
+:type ttl: int</p>
+<dl class="method">
+<dt id="dns.rdataset.Rdataset.add">
+<tt class="descname">add</tt><big>(</big><em>rd</em>, <em>ttl=None</em><big>)</big><a class="headerlink" href="#dns.rdataset.Rdataset.add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add the specified rdata to the rdataset.</p>
+<p>If the optional I{ttl} parameter is supplied, then
+self.update_ttl(ttl) will be called prior to adding the rdata.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>rd</strong> (<em>dns.rdata.Rdata object</em>) &#8211; The rdata</li>
+<li><strong>ttl</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The TTL</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.rdataset.Rdataset.match">
+<tt class="descname">match</tt><big>(</big><em>rdclass</em>, <em>rdtype</em>, <em>covers</em><big>)</big><a class="headerlink" href="#dns.rdataset.Rdataset.match" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if this rdataset matches the specified class, type,
+and covers</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.rdataset.Rdataset.to_text">
+<tt class="descname">to_text</tt><big>(</big><em>name=None</em>, <em>origin=None</em>, <em>relativize=True</em>, <em>override_rdclass=None</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#dns.rdataset.Rdataset.to_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the rdataset into DNS master file format.</p>
+<p>&#64;see: L{dns.name.Name.choose_relativity} for more information
+on how I{origin} and I{relativize} determine the way names
+are emitted.</p>
+<p>Any additional keyword arguments are passed on to the rdata
+to_text() method.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>name</strong> &#8211; If name is not None, emit a RRs with I{name} as</td>
+</tr>
+</tbody>
+</table>
+<p>the owner name.
+:type name: dns.name.Name object
+:param origin: The origin for relative names, or None.
+:type origin: dns.name.Name object
+:param relativize: True if names should names be relativized
+:type relativize: bool</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.rdataset.Rdataset.to_wire">
+<tt class="descname">to_wire</tt><big>(</big><em>name</em>, <em>file</em>, <em>compress=None</em>, <em>origin=None</em>, <em>override_rdclass=None</em>, <em>want_shuffle=True</em><big>)</big><a class="headerlink" href="#dns.rdataset.Rdataset.to_wire" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the rdataset to wire format.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> (<em>dns.name.Name object</em>) &#8211; The owner name of the RRset that will be emitted</li>
+<li><strong>file</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#file" title="(in Python v2.7)"><em>file</em></a>) &#8211; The file to which the wire format data will be appended</li>
+<li><strong>compress</strong> (<a class="reference external" href="http://docs.python.org/library/stdtypes.html#dict" title="(in Python v2.7)"><em>dict</em></a>) &#8211; The compression table to use; the default is None.</li>
+<li><strong>origin</strong> &#8211; The origin to be appended to any relative names when</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>they are emitted.  The default is None.
+&#64;returns: the number of records emitted
+:rtype: int</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.rdataset.Rdataset.update">
+<tt class="descname">update</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#dns.rdataset.Rdataset.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add all rdatas in other to self.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>other</strong> (<em>dns.rdataset.Rdataset object</em>) &#8211; The rdataset from which to update</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.rdataset.Rdataset.update_ttl">
+<tt class="descname">update_ttl</tt><big>(</big><em>ttl</em><big>)</big><a class="headerlink" href="#dns.rdataset.Rdataset.update_ttl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the TTL of the rdataset to be the lesser of the set&#8217;s current
+TTL or the specified TTL.  If the set contains no rdatas, set the TTL
+to the specified TTL.
+:param ttl: The TTL
+:type ttl: int</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.rdataset.from_rdata">
+<tt class="descclassname">dns.rdataset.</tt><tt class="descname">from_rdata</tt><big>(</big><em>ttl</em>, <em>*rdatas</em><big>)</big><a class="headerlink" href="#dns.rdataset.from_rdata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an rdataset with the specified TTL, and with
+the specified rdata objects.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">dns.rdataset.Rdataset object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.rdataset.from_rdata_list">
+<tt class="descclassname">dns.rdataset.</tt><tt class="descname">from_rdata_list</tt><big>(</big><em>ttl</em>, <em>rdatas</em><big>)</big><a class="headerlink" href="#dns.rdataset.from_rdata_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an rdataset with the specified TTL, and with
+the specified list of rdata objects.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">dns.rdataset.Rdataset object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.rdataset.from_text">
+<tt class="descclassname">dns.rdataset.</tt><tt class="descname">from_text</tt><big>(</big><em>rdclass</em>, <em>rdtype</em>, <em>ttl</em>, <em>*text_rdatas</em><big>)</big><a class="headerlink" href="#dns.rdataset.from_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an rdataset with the specified class, type, and TTL, and with
+the specified rdatas in text format.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">dns.rdataset.Rdataset object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.rdataset.from_text_list">
+<tt class="descclassname">dns.rdataset.</tt><tt class="descname">from_text_list</tt><big>(</big><em>rdclass</em>, <em>rdtype</em>, <em>ttl</em>, <em>text_rdatas</em><big>)</big><a class="headerlink" href="#dns.rdataset.from_text_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an rdataset with the specified class, type, and TTL, and with
+the specified list of rdatas in text format.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">dns.rdataset.Rdataset object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-dns.rdatatype">
+<span id="rdata-type"></span><h2>RDATA type<a class="headerlink" href="#module-dns.rdatatype" title="Permalink to this headline">¶</a></h2>
+<p>DNS Rdata Types.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">var _by_text:</th><td class="field-body">The rdata type textual name to value mapping</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type _by_text:</th><td class="field-body">dict</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">var _by_value:</th><td class="field-body">The rdata type value to textual name mapping</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type _by_value:</th><td class="field-body">dict</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">var _metatypes:</th><td class="field-body">If an rdatatype is a metatype, there will be a mapping</td>
+</tr>
+</tbody>
+</table>
+<p>whose key is the rdatatype value and whose value is True in this dictionary.
+:type _metatypes: dict
+:var _singletons: If an rdatatype is a singleton, there will be a mapping
+whose key is the rdatatype value and whose value is True in this dictionary.
+:type _singletons: dict</p>
+<dl class="exception">
+<dt id="dns.rdatatype.UnknownRdatatype">
+<em class="property">exception </em><tt class="descclassname">dns.rdatatype.</tt><tt class="descname">UnknownRdatatype</tt><a class="headerlink" href="#dns.rdatatype.UnknownRdatatype" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">dns.exception.DNSException</span></tt></p>
+<p>Raised if a type is unknown.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.rdatatype.from_text">
+<tt class="descclassname">dns.rdatatype.</tt><tt class="descname">from_text</tt><big>(</big><em>text</em><big>)</big><a class="headerlink" href="#dns.rdatatype.from_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert text into a DNS rdata type value.
+:param text: the text
+:type text: string
+:raises dns.rdatatype.UnknownRdatatype: the type is unknown
+:raises ValueError: the rdata type value is not &gt;= 0 and &lt;= 65535
+:rtype: int</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.rdatatype.is_metatype">
+<tt class="descclassname">dns.rdatatype.</tt><tt class="descname">is_metatype</tt><big>(</big><em>rdtype</em><big>)</big><a class="headerlink" href="#dns.rdatatype.is_metatype" title="Permalink to this definition">¶</a></dt>
+<dd><p>True if the type is a metatype.
+:param rdtype: the type
+:type rdtype: int
+:rtype: bool</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.rdatatype.is_singleton">
+<tt class="descclassname">dns.rdatatype.</tt><tt class="descname">is_singleton</tt><big>(</big><em>rdtype</em><big>)</big><a class="headerlink" href="#dns.rdatatype.is_singleton" title="Permalink to this definition">¶</a></dt>
+<dd><p>True if the type is a singleton.
+:param rdtype: the type
+:type rdtype: int
+:rtype: bool</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.rdatatype.to_text">
+<tt class="descclassname">dns.rdatatype.</tt><tt class="descname">to_text</tt><big>(</big><em>value</em><big>)</big><a class="headerlink" href="#dns.rdatatype.to_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a DNS rdata type to text.
+:param value: the rdata type value
+:type value: int
+:raises ValueError: the rdata type value is not &gt;= 0 and &lt;= 65535
+:rtype: string</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-dns.rrset">
+<span id="rr-set"></span><h2>RR set<a class="headerlink" href="#module-dns.rrset" title="Permalink to this headline">¶</a></h2>
+<p>DNS RRsets (an RRset is a named rdataset)</p>
+<dl class="class">
+<dt id="dns.rrset.RRset">
+<em class="property">class </em><tt class="descclassname">dns.rrset.</tt><tt class="descname">RRset</tt><big>(</big><em>name</em>, <em>rdclass</em>, <em>rdtype</em>, <em>covers=0</em>, <em>deleting=None</em><big>)</big><a class="headerlink" href="#dns.rrset.RRset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dns.rdataset.Rdataset" title="dns.rdataset.Rdataset"><tt class="xref py py-class docutils literal"><span class="pre">dns.rdataset.Rdataset</span></tt></a></p>
+<p>A DNS RRset (named rdataset).</p>
+<p>RRset inherits from Rdataset, and RRsets can be treated as
+Rdatasets in most cases.  There are, however, a few notable
+exceptions.  RRsets have different to_wire() and to_text() method
+arguments, reflecting the fact that RRsets always have an owner
+name.</p>
+<dl class="method">
+<dt id="dns.rrset.RRset.match">
+<tt class="descname">match</tt><big>(</big><em>name</em>, <em>rdclass</em>, <em>rdtype</em>, <em>covers</em>, <em>deleting=None</em><big>)</big><a class="headerlink" href="#dns.rrset.RRset.match" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if this rrset matches the specified class, type,
+covers, and deletion state.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.rrset.RRset.to_rdataset">
+<tt class="descname">to_rdataset</tt><big>(</big><big>)</big><a class="headerlink" href="#dns.rrset.RRset.to_rdataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert an RRset into an Rdataset.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">dns.rdataset.Rdataset object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.rrset.RRset.to_text">
+<tt class="descname">to_text</tt><big>(</big><em>origin=None</em>, <em>relativize=True</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#dns.rrset.RRset.to_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the RRset into DNS master file format.</p>
+<p>&#64;see: L{dns.name.Name.choose_relativity} for more information
+on how I{origin} and I{relativize} determine the way names
+are emitted.</p>
+<p>Any additional keyword arguments are passed on to the rdata
+to_text() method.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>origin</strong> (<em>dns.name.Name object</em>) &#8211; The origin for relative names, or None.</li>
+<li><strong>relativize</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; True if names should names be relativized</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.rrset.RRset.to_wire">
+<tt class="descname">to_wire</tt><big>(</big><em>file</em>, <em>compress=None</em>, <em>origin=None</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#dns.rrset.RRset.to_wire" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the RRset to wire format.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.rrset.from_rdata">
+<tt class="descclassname">dns.rrset.</tt><tt class="descname">from_rdata</tt><big>(</big><em>name</em>, <em>ttl</em>, <em>*rdatas</em><big>)</big><a class="headerlink" href="#dns.rrset.from_rdata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an RRset with the specified name and TTL, and with
+the specified rdata objects.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">dns.rrset.RRset object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.rrset.from_rdata_list">
+<tt class="descclassname">dns.rrset.</tt><tt class="descname">from_rdata_list</tt><big>(</big><em>name</em>, <em>ttl</em>, <em>rdatas</em><big>)</big><a class="headerlink" href="#dns.rrset.from_rdata_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an RRset with the specified name and TTL, and with
+the specified list of rdata objects.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">dns.rrset.RRset object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.rrset.from_text">
+<tt class="descclassname">dns.rrset.</tt><tt class="descname">from_text</tt><big>(</big><em>name</em>, <em>ttl</em>, <em>rdclass</em>, <em>rdtype</em>, <em>*text_rdatas</em><big>)</big><a class="headerlink" href="#dns.rrset.from_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an RRset with the specified name, TTL, class, and type and with
+the specified rdatas in text format.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">dns.rrset.RRset object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dns.rrset.from_text_list">
+<tt class="descclassname">dns.rrset.</tt><tt class="descname">from_text_list</tt><big>(</big><em>name</em>, <em>ttl</em>, <em>rdclass</em>, <em>rdtype</em>, <em>text_rdatas</em><big>)</big><a class="headerlink" href="#dns.rrset.from_text_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an RRset with the specified name, TTL, class, and type, and with
+the specified list of rdatas in text format.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">dns.rrset.RRset object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-dns.set">
+<span id="dns-set"></span><h2>DNS set<a class="headerlink" href="#module-dns.set" title="Permalink to this headline">¶</a></h2>
+<p>A simple Set class.</p>
+<dl class="class">
+<dt id="dns.set.Set">
+<em class="property">class </em><tt class="descclassname">dns.set.</tt><tt class="descname">Set</tt><big>(</big><em>items=None</em><big>)</big><a class="headerlink" href="#dns.set.Set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>A simple set class.</p>
+<p>Sets are not in Python until 2.3, and rdata are not immutable so
+we cannot use sets.Set anyway.  This class implements subset of
+the 2.3 Set interface using a list as the container.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><strong>items</strong> &#8211; A list of the items which are in the set</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dns.set.Set.add">
+<tt class="descname">add</tt><big>(</big><em>item</em><big>)</big><a class="headerlink" href="#dns.set.Set.add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add an item to the set.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.set.Set.clear">
+<tt class="descname">clear</tt><big>(</big><big>)</big><a class="headerlink" href="#dns.set.Set.clear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make the set empty.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.set.Set.copy">
+<tt class="descname">copy</tt><big>(</big><big>)</big><a class="headerlink" href="#dns.set.Set.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a (shallow) copy of the set.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.set.Set.difference">
+<tt class="descname">difference</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#dns.set.Set.difference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new set which I{self} - I{other}, i.e. the items
+in I{self} which are not also in I{other}.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>other</strong> (<em>Set object</em>) &#8211; the other set</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">the same type as I{self}</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.set.Set.difference_update">
+<tt class="descname">difference_update</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#dns.set.Set.difference_update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the set, removing any elements from other which are in
+the set.
+:param other: the collection of items with which to update the set
+:type other: Set object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.set.Set.discard">
+<tt class="descname">discard</tt><big>(</big><em>item</em><big>)</big><a class="headerlink" href="#dns.set.Set.discard" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove an item from the set if present.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.set.Set.intersection">
+<tt class="descname">intersection</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#dns.set.Set.intersection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new set which is the intersection of I{self} and I{other}.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>other</strong> (<em>Set object</em>) &#8211; the other set</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">the same type as I{self}</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.set.Set.intersection_update">
+<tt class="descname">intersection_update</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#dns.set.Set.intersection_update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the set, removing any elements from other which are not
+in both sets.
+:param other: the collection of items with which to update the set
+:type other: Set object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.set.Set.issubset">
+<tt class="descname">issubset</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#dns.set.Set.issubset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Is I{self} a subset of I{other}?</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">bool</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.set.Set.issuperset">
+<tt class="descname">issuperset</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#dns.set.Set.issuperset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Is I{self} a superset of I{other}?</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">bool</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.set.Set.remove">
+<tt class="descname">remove</tt><big>(</big><em>item</em><big>)</big><a class="headerlink" href="#dns.set.Set.remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove an item from the set.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.set.Set.union">
+<tt class="descname">union</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#dns.set.Set.union" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new set which is the union of I{self} and I{other}.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>other</strong> (<em>Set object</em>) &#8211; the other set</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">the same type as I{self}</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.set.Set.union_update">
+<tt class="descname">union_update</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#dns.set.Set.union_update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the set, adding any elements from other which are not
+already in the set.
+:param other: the collection of items with which to update the set
+:type other: Set object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.set.Set.update">
+<tt class="descname">update</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#dns.set.Set.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the set, adding any elements from other which are not
+already in the set.
+:param other: the collection of items with which to update the set
+:type other: any iterable type</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-dns.update">
+<span id="dns-update-message"></span><h2>DNS UPDATE message<a class="headerlink" href="#module-dns.update" title="Permalink to this headline">¶</a></h2>
+<p>DNS Dynamic Update Support</p>
+</div>
+<div class="section" id="module-dns.ttl">
+<span id="ttl-helper"></span><h2>TTL helper<a class="headerlink" href="#module-dns.ttl" title="Permalink to this headline">¶</a></h2>
+<p>DNS TTL conversion.</p>
+<dl class="function">
+<dt id="dns.ttl.from_text">
+<tt class="descclassname">dns.ttl.</tt><tt class="descname">from_text</tt><big>(</big><em>text</em><big>)</big><a class="headerlink" href="#dns.ttl.from_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the text form of a TTL to an integer.</p>
+<p>The BIND 8 units syntax for TTLs (e.g. &#8216;1w6d4h3m10s&#8217;) is supported.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>text</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; the textual TTL</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Raises dns.ttl.BadTTL:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">the TTL is not well-formed</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">int</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-dns.node">
+<span id="node"></span><h2>Node<a class="headerlink" href="#module-dns.node" title="Permalink to this headline">¶</a></h2>
+<p>DNS nodes.  A node is a set of rdatasets.</p>
+<dl class="class">
+<dt id="dns.node.Node">
+<em class="property">class </em><tt class="descclassname">dns.node.</tt><tt class="descname">Node</tt><a class="headerlink" href="#dns.node.Node" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>A DNS node.</p>
+<p>A node is a set of rdatasets</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><strong>rdatasets</strong> &#8211; the node&#8217;s rdatasets</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dns.node.Node.delete_rdataset">
+<tt class="descname">delete_rdataset</tt><big>(</big><em>rdclass</em>, <em>rdtype</em>, <em>covers=0</em><big>)</big><a class="headerlink" href="#dns.node.Node.delete_rdataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete the rdataset matching the specified properties in the
+current node.</p>
+<p>If a matching rdataset does not exist, it is not an error.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>rdclass</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The class of the rdataset</li>
+<li><strong>rdtype</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The type of the rdataset</li>
+<li><strong>covers</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The covered type.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.node.Node.find_rdataset">
+<tt class="descname">find_rdataset</tt><big>(</big><em>rdclass</em>, <em>rdtype</em>, <em>covers=0</em>, <em>create=False</em><big>)</big><a class="headerlink" href="#dns.node.Node.find_rdataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find an rdataset matching the specified properties in the
+current node.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>rdclass</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The class of the rdataset</li>
+<li><strong>rdtype</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The type of the rdataset</li>
+<li><strong>covers</strong> &#8211; The covered type.  Usually this value is</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>dns.rdatatype.NONE, but if the rdtype is dns.rdatatype.SIG or
+dns.rdatatype.RRSIG, then the covers value will be the rdata
+type the SIG/RRSIG covers.  The library treats the SIG and RRSIG
+types as if they were a family of
+types, e.g. RRSIG(A), RRSIG(NS), RRSIG(SOA).  This makes RRSIGs much
+easier to work with than if RRSIGs covering different rdata
+types were aggregated into a single RRSIG rdataset.
+:type covers: int
+:param create: If True, create the rdataset if it is not found.
+:type create: bool
+:raises KeyError: An rdataset of the desired type and class does
+not exist and I{create} is not True.
+:rtype: dns.rdataset.Rdataset object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.node.Node.get_rdataset">
+<tt class="descname">get_rdataset</tt><big>(</big><em>rdclass</em>, <em>rdtype</em>, <em>covers=0</em>, <em>create=False</em><big>)</big><a class="headerlink" href="#dns.node.Node.get_rdataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an rdataset matching the specified properties in the
+current node.</p>
+<p>None is returned if an rdataset of the specified type and
+class does not exist and I{create} is not True.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>rdclass</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The class of the rdataset</li>
+<li><strong>rdtype</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The type of the rdataset</li>
+<li><strong>covers</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The covered type.</li>
+<li><strong>create</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True, create the rdataset if it is not found.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dns.rdataset.Rdataset object or None</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.node.Node.replace_rdataset">
+<tt class="descname">replace_rdataset</tt><big>(</big><em>replacement</em><big>)</big><a class="headerlink" href="#dns.node.Node.replace_rdataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Replace an rdataset.</p>
+<p>It is not an error if there is no rdataset matching I{replacement}.</p>
+<p>Ownership of the I{replacement} object is transferred to the node;
+in other words, this method does not store a copy of I{replacement}
+at the node, it stores I{replacement} itself.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dns.node.Node.to_text">
+<tt class="descname">to_text</tt><big>(</big><em>name</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#dns.node.Node.to_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a node to text format.</p>
+<p>Each rdataset at the node is printed.  Any keyword arguments
+to this method are passed on to the rdataset&#8217;s to_text() method.
+:param name: the owner name of the rdatasets
+:type name: dns.name.Name object
+:rtype: string</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">DNS elements</a><ul>
+<li><a class="reference internal" href="#module-dns.name">DNS Name</a></li>
+<li><a class="reference internal" href="#module-dns.message">DNS message</a></li>
+<li><a class="reference internal" href="#module-dns.zone">DNS Zone</a></li>
+<li><a class="reference internal" href="#module-dns.rdata">RDATA</a></li>
+<li><a class="reference internal" href="#rdata-class">RDATA class</a></li>
+<li><a class="reference internal" href="#module-dns.rdataset">RDATA set</a></li>
+<li><a class="reference internal" href="#module-dns.rdatatype">RDATA type</a></li>
+<li><a class="reference internal" href="#module-dns.rrset">RR set</a></li>
+<li><a class="reference internal" href="#module-dns.set">DNS set</a></li>
+<li><a class="reference internal" href="#module-dns.update">DNS UPDATE message</a></li>
+<li><a class="reference internal" href="#module-dns.ttl">TTL helper</a></li>
+<li><a class="reference internal" href="#module-dns.node">Node</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="database.html"
+                        title="previous chapter">Database elements</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/dns.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="database.html" title="Database elements"
+             >previous</a> |</li>
+        <li><a href="index.html">NDNS: DNS service for Named Data Networking 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Alexander Afanasyev.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
