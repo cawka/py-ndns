@@ -22,16 +22,36 @@ import dns.rrset
 import dns.message
 
 class Zone (Base):
+    """
+    Zone abstraction:
+
+    .. code-block:: sql
+    
+        CREATE TABLE zones (
+        	id INTEGER NOT NULL,
+        	name BLOB,
+        	default_key_id INTEGER,
+        	PRIMARY KEY (id)
+        );
+        CREATE UNIQUE INDEX ix_zones_name ON zones (name);
+
+    :ivar rrsets: One to many relationship to :py:class:`ndns.rrset.RRSet`
+    :ivar soa:    One-to-one map (shortcut) to SOA :py:class:`ndns.rrset.RRSet` of the zone
+    :ivar keys:   One to many relationship to :py:class:`ndns.key.Key`
+    :ivar default_key: One-to-one map to default :py:class:`ndns.key.Key` for the zone
+    """
+
     __tablename__ = "zones"
-    rrsets = relationship ("RRSet", backref="zone", cascade="all, delete, delete-orphan")
-    keys = relationship ("Key", backref="zone", cascade="all, delete, delete-orphan", order_by="Key.key_type")
+    
+    id = Column (Integer, primary_key = True)
+    _name = Column ("name", Binary, index=True, unique=True)
+    default_key_id = Column (Integer)
+
+    rrsets = relationship ("RRSet", backref="zone", cascade="all, delete, delete-orphan") #: hello2
     soa = relationship ("RRSet", #viewonly=True, 
                         primaryjoin = "and_(Zone.id==RRSet.zone_id, RRSet.rclass == %d, RRSet.rtype == %d)" % (dns.rdataclass.IN, dns.rdatatype.SOA))
 
-    id = Column (Integer, primary_key = True)
-    _name = Column ("name", Binary, index=True, unique=True)
-
-    default_key_id = Column (Integer)
+    keys = relationship ("Key", backref="zone", cascade="all, delete, delete-orphan", order_by="Key.key_type")
     default_key = relationship ("Key", 
                                 uselist=False, post_update=True,
                                 primaryjoin="Zone.default_key_id == Key.id",
@@ -40,16 +60,24 @@ class Zone (Base):
 
     @property
     def name (self):
-        return ndn.Name (ccnb_buffer = self._name)
+        """Convert internal wire representation of zone name to :py:class:`ndn.Name` object"""
+        return ndn.Name.fromWire (self._name)
 
     @property
     def dns_name (self):
+        """Convert internal wire representation of zone name to DNS name (:py:class:`dns.name.Name` object)"""
         return dns.name.from_text (dnsify (str (self.name)))
 
     @hybrid_method
     def has_name (self, other):
-        return self._name == other.get_ccnb ()
+        """Facilitate SQL comparison with another zone name in wire format"""
+        return self._name == other.toWire ()
 
     @name.setter
     def name (self, value):
-        self._name = buffer (value.get_ccnb ())
+        """Set zone name to the wire representation of the value
+
+        :type  :value: ndn.Name
+        :param :value: zone name
+        """
+        self._name = buffer (value.toWire ())

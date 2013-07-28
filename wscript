@@ -69,3 +69,8 @@ def build (bld):
          install_path = "${BINDIR}",
          chmod = 0755,
         )
+
+def docs (bld):
+    import subprocess
+    p = subprocess.Popen (['sphinx-build', '-b', 'html', './docs', './build/docs'], close_fds=False)
+    p.communicate ()
