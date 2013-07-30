@@ -184,7 +184,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'NDNSDNSserviceforNamedDataNetworking.tex', u'NDNS: DNS service for Named Data Networking Documentation',
+  ('index', 'NDNSDNSserviceforNamedDataNetworking.tex', u'NDNS: DNS service for Named Data Networking',
    u'Alexander Afanasyev', 'manual'),
 ]
 
@@ -214,7 +214,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'ndnsdnsservicefornameddatanetworking', u'NDNS: DNS service for Named Data Networking Documentation',
+    ('index', 'ndnsdnsservicefornameddatanetworking', u'NDNS: DNS service for Named Data Networking',
      [u'Alexander Afanasyev'], 1)
 ]
 
@@ -228,7 +228,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'NDNSDNSserviceforNamedDataNetworking', u'NDNS: DNS service for Named Data Networking Documentation',
+  ('index', 'NDNSDNSserviceforNamedDataNetworking', u'NDNS: DNS service for Named Data Networking',
    u'Alexander Afanasyev', 'NDNSDNSserviceforNamedDataNetworking', 'One line description of project.',
    'Miscellaneous'),
 ]
