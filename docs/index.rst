@@ -6,8 +6,19 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   database.rst
+   overview
 
+Internals
+
+.. toctree::
+   :maxdepth: 1
+
+   database
+
+.. toctree::
+   :hidden:
+
+   dns
 
 .. Indices and tables
 .. ==================
