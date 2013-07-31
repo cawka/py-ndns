@@ -1,6 +1,10 @@
 Database elements
 -----------------
 
+.. image:: _static/ndns-database.svg
+
+:download:`SQLite database definition <_static/ndns-database-sqlite.sql>`, :download:`VisualParadigm project <_static/ndns-database.vpp>`
+
 Zone
 ====
 

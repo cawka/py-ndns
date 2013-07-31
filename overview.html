@@ -1,0 +1,218 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Overview &mdash; NDNS: DNS service for Named Data Networking 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="NDNS: DNS service for Named Data Networking 0.1 documentation" href="index.html" />
+    <link rel="next" title="Database elements" href="database.html" />
+    <link rel="prev" title="NDNS: DNS service for Named Data Networking" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="database.html" title="Database elements"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="NDNS: DNS service for Named Data Networking"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">NDNS: DNS service for Named Data Networking 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="overview">
+<h1>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
+<p>Domain Name System in IP architecture is extremely successfull example of a highly scalable distributed database with virtual unlimited capactity to store various types of information.
+Such functionality can be of a great benefit in Named Data Networking (NDN) architecture as well.
+There could be many potential uses of such a database, including NDN namespace managing (providing authoritative delegation of namespaces), foundation of a public key infrastructure with hierarchical (identity-based) trust model, and many others.
+At the same time, the driving force for a DNS implementation in NDN is a specific use: to scale name-based routing.</p>
+<div class="section" id="scaling-name-based-routing-using-dns-map-n-encap">
+<h2>Scaling name-based routing using DNS (map-n-encap)<a class="headerlink" href="#scaling-name-based-routing-using-dns-map-n-encap" title="Permalink to this headline">¶</a></h2>
+<p>We observe that NDN&#8217;s routing scalability issue is not new; one could ask a similar question about IP.
+Although IP&#8217;s address space is finite, it is larger than any of today&#8217;s router can hold.
+IP solves this problem by address aggregation: at the edge of the Internet, hosts and small networks get addresses from their access providers.
+Since addresses from the same provider can be aggregated into prefixes (i.e., these are provider-aggregatable or PA addresses), routing tables only need to store prefixes instead of individual IP addresses.
+However, over the years there has been an increasing demand for provider-independent (PI) address prefixes.
+Such PI prefixes cannot be aggregated with provider prefixes and must be announced separately, leading to increased routing table size.</p>
+<p>Map-n-Encap was proposed long ago to scale IP routing in face of a large number of provider-independent addresses.
+The basic idea is to use a mapping system to map a provider-independent destination address to ISP-specific addresses, and then tunnel the packet (e.g., using IP-in-IP encapsulation) to the destination via the ISP-address.
+In this way, the core maintains only a limited number of ISP-specific address prefixes.
+This approach is often described as separating the locator and the identifier has led to a number of specific designs including 8+8, LISP, ILNP, and APT, to name a few.
+However, due to the difficulties in retrofitting new solutions into the operational Internet, so far none of them has been deployed.</p>
+<div class="figure">
+<img alt="_images/map-n-encap-ip.png" src="_images/map-n-encap-ip.png" />
+<p class="caption"><strong>Map-n-encap example in IP</strong></p>
+<div class="legend">
+<p>Requesting data from ndnsim.net using map-n-encap can involve the following steps:</p>
+<ol class="arabic">
+<li><dl class="first docutils">
+<dt>Lookup name -&gt; IP address</dt>
+<dd><ul class="first last simple">
+<li><tt class="docutils literal"><span class="pre">ndnsim.net</span></tt> =&gt; <tt class="docutils literal"><span class="pre">1.1.1.1</span></tt> and <tt class="docutils literal"><span class="pre">2.2.2.2</span></tt></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Lookup IP -&gt; ISP IP address mapping</dt>
+<dd><ul class="first last simple">
+<li><tt class="docutils literal"><span class="pre">1.1.1.1</span></tt> =&gt; <tt class="docutils literal"><span class="pre">3.0.0.0</span></tt>, or</li>
+<li><tt class="docutils literal"><span class="pre">2.2.2.2</span></tt> =&gt; <tt class="docutils literal"><span class="pre">4.0.0.0</span></tt></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Send IP-IP encapsulated packet</dt>
+<dd><ul class="first last simple">
+<li>outer dst IP: <tt class="docutils literal"><span class="pre">3.x.x.x</span></tt>, inner dst IP: <tt class="docutils literal"><span class="pre">1.1.1.1</span></tt>, or</li>
+<li>outer dst IP: <tt class="docutils literal"><span class="pre">4.x.x.x</span></tt>, inner dst IP: <tt class="docutils literal"><span class="pre">2.2.2.2</span></tt></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ol>
+</div>
+</div>
+<p>NDN is data-centric, and most of the application use names in a provider-independent way, otherwise they would be required to do renaming whenever service provider changes.
+Thus in NDN, the problem of provider-independent name prefixes could be is much worse, but it still can be alleviated applying the same map-n-encap idea in NDN context:
+An provider-independed name can be mapped to an ISP-name, which can be carried in the expressed Interests in form of a forwarding hint, alongside the original name.
+This essentially moves the scalability issue from the routing to the mapping system, and today&#8217;s DNS can easily handle this scaling challenge.
+As the mapping happens at the edge of the network, it will have no impact on the network core.</p>
+<div class="figure">
+<img alt="_images/map-n-encap-ndn.png" src="_images/map-n-encap-ndn.png" />
+<p class="caption"><strong>Map-n-encap example in NDN</strong></p>
+<div class="legend">
+<p>Requesting /net/ndnsim data using map-n-encap can involve the following steps:</p>
+<ol class="arabic">
+<li><dl class="first docutils">
+<dt>Lookup app name -&gt; &#8220;ISP&#8221; name (forwarding hint)</dt>
+<dd><ul class="first last simple">
+<li><tt class="docutils literal"><span class="pre">/net/ndnsim</span></tt> =&gt; <tt class="docutils literal"><span class="pre">/net/ucla/cs</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">/net/ndnsim</span></tt> =&gt; <tt class="docutils literal"><span class="pre">/net/telia/latvia</span></tt></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Send “encapsulated” Interest</dt>
+<dd><ul class="first last simple">
+<li>Interest for <tt class="docutils literal"><span class="pre">/net/ndnsim</span></tt> with embedded forwarding hint <tt class="docutils literal"><span class="pre">/net/ucla/cs</span></tt>, or</li>
+<li>Interest for <tt class="docutils literal"><span class="pre">/net/ndnsim</span></tt> with embedded forwarding hing <tt class="docutils literal"><span class="pre">/net/telia/latvia</span></tt></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ol>
+</div>
+</div>
+<div class="section" id="ndn-forwarding-hint">
+<h3>NDN forwarding hint<a class="headerlink" href="#ndn-forwarding-hint" title="Permalink to this headline">¶</a></h3>
+<p>Forwarding hint is a concept</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Overview</a><ul>
+<li><a class="reference internal" href="#scaling-name-based-routing-using-dns-map-n-encap">Scaling name-based routing using DNS (map-n-encap)</a><ul>
+<li><a class="reference internal" href="#ndn-forwarding-hint">NDN forwarding hint</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">NDNS: DNS service for Named Data Networking</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="database.html"
+                        title="next chapter">Database elements</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/overview.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="database.html" title="Database elements"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="NDNS: DNS service for Named Data Networking"
+             >previous</a> |</li>
+        <li><a href="index.html">NDNS: DNS service for Named Data Networking 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Alexander Afanasyev.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
