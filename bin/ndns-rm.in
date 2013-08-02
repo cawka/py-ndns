@@ -12,7 +12,7 @@
 import sys
 sys.path = ["@LIBDIR@", "@LIBDIR@/lib", "@LIBDIR@/ndns/lib"] + sys.path
 
-import sqlite3, iscpy, argparse, time
+import argparse
 import dns.rdataclass
 import dns.rdatatype
 import dns.rdata
@@ -69,8 +69,13 @@ if( __name__ == '__main__' ):
         zonefile = dns.zone.from_text (args.rr, origin = origin, check_origin = False)
     else:
         zonefile = dns.zone.from_file (sys.stdin, origin = origin, check_origin = False)
-    
+
+    default_rtt = zone.soa[0].rrs[0].ttl
+        
     for (name, ttl, rdata) in zonefile.iterate_rdatas ():
+        if ttl == 0:
+            ttl = default_rtt
+
         rrset = _ndns.query (ndns.RRSet).\
             with_parent (zone).\
             filter_by (label = name.to_text (), rclass = rdata.rdclass, rtype = rdata.rdtype).\

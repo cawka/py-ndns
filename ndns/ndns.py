@@ -61,13 +61,13 @@ def ndns_session (libdir):
 
 def createSignedData (session, name, content, freshness, key, type = ndn.CONTENT_DATA):
     signingKey = key.private_key (session.keydir)
-    signedInfo = ndn.SignedInfo (key_digest = signingKey.publicKeyID, key_locator = key.key_locator, 
-                                   freshness = freshness,
-                                   type = type)
+    signedInfo = ndn.SignedInfo (key_digest = signingKey.publicKeyID, 
+                                 key_locator = key.key_locator, 
+                                 freshness = freshness,
+                                 type = type)
     # , py_timestamp = time.mktime (time.gmtime()))
 
-    co = ndn.ContentObject (name = name, signed_info = signedInfo, content = content)
-
+    co = ndn.Data (name = name, signed_info = signedInfo, content = content)
     co.sign (signingKey)
     return co
 

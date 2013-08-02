@@ -16,13 +16,11 @@ sys.path = ["@LIBDIR@", "@LIBDIR@/lib", "@LIBDIR@/ndns/lib"] + sys.path
 import argparse, logging
 
 #install from contrib/
-import setproctitle
 import ndn
 import dns.rdataclass, dns.rdatatype, dns.rdata, dns.rrset, dns.zone
 
 # part of lib/
 import ndns
-import base64
 
 ######################################################################
 ######################################################################

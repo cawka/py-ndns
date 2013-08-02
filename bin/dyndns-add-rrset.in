@@ -19,7 +19,7 @@ import ndns.query
 import dns.rdtypes.IN.NDNCERT
 import dns.rdataclass, dns.rdatatype
 import dns.zone
-import os, glob, re, time, struct
+import os, time, struct
 import ndn
 
 ######################################################################

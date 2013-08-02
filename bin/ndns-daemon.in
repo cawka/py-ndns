@@ -13,14 +13,13 @@ import sys
 _WORKDIR = sys.path[0]
 sys.path = ["@LIBDIR@", "@LIBDIR@/lib", "@LIBDIR@/ndns/lib"] + sys.path
 
-import sqlite3, iscpy, argparse, time, logging, logging.handlers
+import argparse, logging, logging.handlers
 import os, functools, signal, daemon
 
 #install from contrib/
 import setproctitle
 import ndn
 import dns.rdataclass, dns.rdatatype, dns.rdata, dns.rrset, dns.zone
-from multiprocessing.pool import ThreadPool
 
 # part of lib/
 import ndns

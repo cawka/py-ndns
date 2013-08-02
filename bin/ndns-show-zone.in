@@ -12,7 +12,7 @@
 import sys
 sys.path = ["@LIBDIR@", "@LIBDIR@/lib", "@LIBDIR@/ndns/lib"] + sys.path
 
-import sqlite3, iscpy, argparse, time, logging, logging.handlers
+import argparse
 import dns.rdataclass
 import dns.rdatatype
 import dns.rdata

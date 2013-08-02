@@ -61,7 +61,7 @@ class RRSet (Base):
         """
         Get NDN Data packet (:py:class:`ndn.Data`) converted from the stored wire format 
         """
-        return ndn.ContentObject.fromWire (self._ndndata)
+        return ndn.Data.fromWire (self._ndndata)
 
     @ndndata.setter
     def ndndata (self, value):

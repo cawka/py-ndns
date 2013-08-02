@@ -20,7 +20,7 @@ import dns.rdtypes.IN.NDNCERT
 import dns.rdataclass, dns.rdatatype
 import dns.zone
 import dns.update
-import os, glob, re, time, struct
+import os
 import ndn
 
 ######################################################################
