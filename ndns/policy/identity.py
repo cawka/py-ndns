@@ -10,13 +10,16 @@
 
 import ndn
 import logging, logging.handlers, sys, time
-# import ndns.query
 import ndns
 import dns.rdatatype
 import random
 
 
 class IdentityPolicy:
+    """
+    Implementation of an identity policy
+    """
+    
     def __init__ (self, anchors = [], rules = [], chain_limit = 10):
         self.anchors = anchors
         self.rules = rules
@@ -103,7 +106,7 @@ class IdentityPolicy:
             else:
                 try:
                     resolver = Resolver (face, nextLevelProcessor)
-                    ndns.CachingQueryObj.expressQueryFor (zone, dns.rdatatype.FH, True, face,
+                    ndns.CachingQueryObj.expressQueryFor (face, zone, dns.rdatatype.FH, True,
                                                           resolver.onHintData, nextLevelProcessor.onError, nextLevelProcessor.onTimeout)
 
                 except ndns.query.QueryException:
@@ -111,12 +114,6 @@ class IdentityPolicy:
 
     def authorize_by_anchor (self, data_name, key_name):
         # self._LOG.debug ("== authorize_by_anchor == data: [%s], key: [%s]" % (data_name, key_name))
-
-        if not isinstance (data_name, ndn.Name):
-            data_name = ndn.Name (data_name)
-
-        if not isinstance (key_name, ndn.Name):
-            key_name = ndn.Name (key_name)
 
         for anchor in self.anchors:
             if key_name == anchor[0]:
@@ -127,11 +124,6 @@ class IdentityPolicy:
         return None
 
     def authorize_by_rule (self, data_name, key_name):
-        if not isinstance (data_name, str):
-            data_name = str (data_name)
-
-        if not isinstance (key_name, str):
-            key_name = str (key_name)
 
         for rule in self.rules:
             matches_key = ndn.nre.match (rule[0], key_name)
