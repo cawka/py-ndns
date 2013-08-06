@@ -67,7 +67,7 @@ class CachingQuery:
                             face,
                             onResult, onError,
                             query, 
-                            zone = None, hint = None, label = None, rrtype = None, parse_dns = True):
+                            zone = None, hint = None, label = None, rrtype = None, parse_dns = True, limit_left = 10):
         """
         Caching version of the most basic type of querying (:py:meth:`ndns.query.SimpleQuery.expressQueryForRaw`).  
         The user has to explicity specify the authority zone, forwarding hint, label, and resource record type.
@@ -125,16 +125,16 @@ class CachingQuery:
             def __call__ (self, ndn_data, dns_data):
                 self.cache[self.key] = [ndn_data, dns_data, int (time.time ()) + ndn_data.signedInfo.freshnessSeconds]
                 self.onResult (ndn_data, dns_data)
-        
+
         SimpleQuery.expressQueryForRaw (face, 
                                         ResultCacher (self.cache_raw, key, onResult), onError, 
                                         query, 
-                                        zone, hint, label, rrtype, parse_dns)
+                                        zone, hint, label, rrtype, parse_dns, limit_left)
 
     def expressQueryFor (self,
                          face,
                          onResult, onError,
-                         zone, hint, label, rrtype, parse_dns = True):
+                         zone, hint, label, rrtype, parse_dns = True, limit_left = 10):
         
         if isinstance(rrtype, str):
             rrtype = dns.rdatatype.to_text (dns.rdatatype.from_text (rrtype))
@@ -149,4 +149,4 @@ class CachingQuery:
         self.expressQueryForRaw (face, 
                                  onResult, onError, 
                                  query,
-                                 zone, hint, label, rrtype, parse_dns)
+                                 zone, hint, label, rrtype, parse_dns, limit_left)

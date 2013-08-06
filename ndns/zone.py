@@ -43,8 +43,9 @@ class Zone (Base):
 
     __tablename__ = "zones"
     
-    id = Column (Integer, primary_key = True)
-    _name = Column ("name", Binary, index=True, unique=True)
+    id = Column (Integer, index=True, primary_key = True)
+    _name = Column ("name", Binary, index=True)
+    # , unique=True)
     default_key_id = Column (Integer)
 
     rrsets = relationship ("RRSet", backref="zone", cascade="all, delete, delete-orphan") #: hello2

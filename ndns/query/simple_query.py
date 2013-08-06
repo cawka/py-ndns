@@ -29,7 +29,7 @@ class SimpleQuery:
     def __init__ (self, face,
                   onResult, onError,
                   query,
-                  zone = None, hint = None, label = None, rrtype = None, parse_dns = True):
+                  zone = None, hint = None, label = None, rrtype = None, parse_dns = True, limit_left = 10):
         self.face = face
         self.query = query
         self.onResult = onResult
@@ -39,6 +39,7 @@ class SimpleQuery:
         self.label = label
         self.rrtype = rrtype
         self.parse_dns = parse_dns
+        self.limit_left = limit_left
 
     def _onVerify (self, dataPacket, status):
         if not status:
@@ -81,8 +82,7 @@ class SimpleQuery:
             # don't verify the outer part, it cannot be verified for now anyways
             data = ndn.Data.fromWire (data.content)
 
-        # return ndns.TrustPolicy.verifyAsync (self.face, data, self._onVerify)
-        self._onVerify (data, True)
+        ndns.TrustPolicy.verifyAsync (self.face, data, self._onVerify, self.limit_left)
 
     def _onTimeout (self, interest):
         return self.onError ("Query timed out")
@@ -91,7 +91,7 @@ class SimpleQuery:
     def expressQueryForRaw (face,
                             onResult, onError,
                             query,
-                            zone = None, hint = None, label = None, rrtype = None, parse_dns = True):
+                            zone = None, hint = None, label = None, rrtype = None, parse_dns = True, limit_left = 10):
         """
         This is the most basic type of querying.  The user has to explicity
         specify the authority zone, forwarding hint, label, and resource record type1
@@ -138,5 +138,5 @@ class SimpleQuery:
         state = SimpleQuery (face,
                              onResult, onError,
                              query,
-                             zone, hint, label, rrtype, parse_dns)
+                             zone, hint, label, rrtype, parse_dns, limit_left)
         face.expressInterest (query, state._onData, state._onTimeout)

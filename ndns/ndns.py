@@ -38,9 +38,9 @@ Pr3CwyBRloTJJbm5kf+pGuJh4fE9Qk0i/fS9Xs6gFup3oPnr+wFFjJObnRTrUsaM
 8TQokOLYZFsatsZOvwIDAQAB
 -----END PUBLIC KEY-----""")
                 ]],
-    rules = [["^(<.*>*)<DNS>(<.*>*)<.*><NDNCERT>$", "\\1\\2", "^(<.*>*)<DNS>(<.*>*)$", "\\1\\2"],
-             # ["^(<.*>*)<DNS>(<.*>*)<.*><NDNCERT>$", "\\1\\2", "^(<.*>*)<(.*)\.(.*)>DNS(<.*>*)$", "\\1\\3\\2\\4"],
-             ["^(<.*>*)<DNS>(<.*>*)<NDNCERT>$", "\\1\\2", "(<.*>*)", "\\1"]]
+    rules = [["^(<>*)<DNS>(<>*)<><NDNCERT>$", "\\1\\2", "^(<>*)<DNS>(<>*)$", "\\1\\2"],
+             ["^(<>*)<DNS>(<>*)<><NDNCERT>$", "\\1\\2", "^(<>*)<(.+)\.(.+)><DNS>(<>*)$", "\\1\\3\\2\\4"],
+             ["^(<>*)<DNS>(<>*)<NDNCERT>$", "\\1\\2", "(<>*)", "\\1"]]
     )
 
 CachingQueryObj = query.CachingQuery ()
@@ -129,10 +129,12 @@ def createSignedRRsetData (session, rrset, key, version = None):
 def add_rr (session, zone, origin, name, ttl, rdata):
     # print "Create record: '%s %s %d %s'" % (name, dns.rdatatype.to_text (rdata.rdtype), ttl, rdata.to_text ())
 
-    rrset = session.query (ndns.RRSet).\
-        with_parent (zone).\
-        filter_by (label = name.to_text (), rclass = rdata.rdclass, rtype = rdata.rdtype).\
-        first ()
+    # rrset = session.query (ndns.RRSet).\
+    #     with_parent (zone).\
+    #     filter_by (label = name.to_text (), rclass = rdata.rdclass, rtype = rdata.rdtype).\
+    #     first ()
+
+    rrset = None
     
     if not rrset:
         rrset = ndns.RRSet (label = name.to_text (), rclass = rdata.rdclass, rtype = rdata.rdtype)

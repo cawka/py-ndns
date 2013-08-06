@@ -187,7 +187,8 @@ class Key (Base):
         '''
 
         self._key = ndn.Key ()
-        self._key.generateRSA (2048 if self.key_type == "KSK" else 1024)
+        # self._key.generateRSA (2048 if self.key_type == "KSK" else 1024)
+        self._key.generateRSA (512)
 
         if not os.path.exists (keydir):
             os.makedirs (keydir)
