@@ -15,59 +15,79 @@ import ndn
 import time
 import dns.rdatatype
 from simple_query import SimpleQuery
+from iterative_query import IterativeQuery
 
 _LOG = logging.getLogger ("ndns.query.Caching")
 
 class CachingQuery:
     def __init__ (self):
         self.cache = {}
+        self.cache_zone = {}
         self.cache_raw = {}
 
-    # def get (self, name, rrtype = dns.rdatatype.FH, parse_dns = True, face = None):
-    #     if rrtype is None:
-    #         rrtype = dns.rdatatype.FH
+    def expressQuery (self, 
+                      face,
+                      onResult, onError,
+                      name, rrtype = dns.rdatatype.FH, parse_dns = True):
 
-    #     if isinstance (rrtype, str):
-    #         rrtype = dns.rdatatype.from_text (rrtype)
+        # _LOG.debug ('expressQuery')
 
-    #     class Key:
-    #         def __init__ (self, name, type):
-    #             self.name = name
-    #             self.type = type
+        if rrtype is None:
+            rrtype = dns.rdatatype.FH
+
+        if isinstance (rrtype, str):
+            rrtype = dns.rdatatype.from_text (rrtype)
+
+        class Key:
+            def __init__ (self, name, type):
+                self.name = name
+                self.type = type
     
-    #         def __eq__ (self, other):
-    #             return self.name == other.name and self.type == other.type
+            def __eq__ (self, other):
+                return self.name == other.name and self.type == other.type
     
-    #         def __ne__ (self, other):
-    #             return self.name != other.name or self.type != other.type
+            def __ne__ (self, other):
+                return self.name != other.name or self.type != other.type
     
-    #         def __hash__ (self):
-    #             return str(self.name).__hash__ () + self.type
+            def __hash__ (self):
+                return str(self.name).__hash__ () + self.type
 
-    #     key = Key (name, rrtype)
-    #     try:
-    #         [result, msg, ttl] = self.cache[key]
-    #         if time.time () > ttl:
-    #             del self.cache[key]
-    #         else:
-    #             # _LOG.debug ("              found in cache")
-    #             return [result, msg]
+        key = Key (name, rrtype)
+        try:
+            [result, msg, ttl] = self.cache[key]
+            if time.time () > ttl:
+                del self.cache[key]
+            else:
+                onResult (result, msg)
+                return
+                
+        except KeyError:
+            pass
 
-    #     except KeyError:
-    #         pass
+        IterativeQuery.expressQuery (face, 
+                                     ResultCacher (self.cache, key, onResult), onError, 
+                                     name, rrtype, parse_dns)
 
-    #     # _LOG.debug ("CachingQuery: name: %s, type: %s" % (name, dns.rdatatype.to_text (rrtype)))
+    def expressQueryForZoneFh (self, face, onResult, onError, zone):
+        key = str(zone)
+        try:
+            [result, msg, ttl] = self.cache_zone[key]
+            if time.time () > ttl:
+                del self.cache_zone[key]
+            else:
+                onResult (result, msg)
+                return
+        except KeyError:
+            pass
+
+        IterativeQuery.expressQueryForZoneFh (face, 
+                                              ResultCacher (self.cache_zone, key, onResult), onError, zone)
         
-    #     [result, msg] = IterativeQuery.get (name, rrtype, parse_dns)
-    #     self.cache[key] = [result, msg, int (time.time ()) + result.signedInfo.freshnessSeconds]
-
-    #     return [result, msg]
-
     def expressQueryForRaw (self,
                             face,
                             onResult, onError,
                             query, 
-                            zone = None, hint = None, label = None, rrtype = None, parse_dns = True, limit_left = 10):
+                            zone = None, hint = None, label = None, rrtype = None, parse_dns = True, limit_left = 10, verify = True):
         """
         Caching version of the most basic type of querying (:py:meth:`ndns.query.SimpleQuery.expressQueryForRaw`).  
         The user has to explicity specify the authority zone, forwarding hint, label, and resource record type.
@@ -103,6 +123,7 @@ class CachingQuery:
         :param parse_dns: Flag whether to parse DNS message or not (default True)
         :type parse_dns: bool
         """
+        # _LOG.debug ('expressQueryForRaw')
 
         key = str (query)
         try:
@@ -116,26 +137,17 @@ class CachingQuery:
         except KeyError:
             pass
 
-        class ResultCacher:
-            def __init__ (self, cache, key, onResult):
-                self.cache = cache
-                self.key = key
-                self.onResult = onResult
-
-            def __call__ (self, ndn_data, dns_data):
-                self.cache[self.key] = [ndn_data, dns_data, int (time.time ()) + ndn_data.signedInfo.freshnessSeconds]
-                self.onResult (ndn_data, dns_data)
-
         SimpleQuery.expressQueryForRaw (face, 
                                         ResultCacher (self.cache_raw, key, onResult), onError, 
                                         query, 
-                                        zone, hint, label, rrtype, parse_dns, limit_left)
+                                        zone, hint, label, rrtype, parse_dns, limit_left, verify)
 
     def expressQueryFor (self,
                          face,
                          onResult, onError,
-                         zone, hint, label, rrtype, parse_dns = True, limit_left = 10):
-        
+                         zone, hint, label, rrtype, parse_dns = True, limit_left = 10, verify = True):
+
+        # _LOG.debug ('expressQueryFor')
         if isinstance(rrtype, str):
             rrtype = dns.rdatatype.to_text (dns.rdatatype.from_text (rrtype))
         else:
@@ -149,4 +161,14 @@ class CachingQuery:
         self.expressQueryForRaw (face, 
                                  onResult, onError, 
                                  query,
-                                 zone, hint, label, rrtype, parse_dns, limit_left)
+                                 zone, hint, label, rrtype, parse_dns, limit_left, verify)
+
+class ResultCacher:
+    def __init__ (self, cache, key, onResult):
+        self.cache = cache
+        self.key = key
+        self.onResult = onResult
+
+    def __call__ (self, ndn_data, dns_data):
+        self.cache[self.key] = [ndn_data, dns_data, int (time.time ()) + ndn_data.signedInfo.freshnessSeconds]
+        self.onResult (ndn_data, dns_data)

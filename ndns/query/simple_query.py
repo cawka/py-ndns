@@ -29,7 +29,7 @@ class SimpleQuery:
     def __init__ (self, face,
                   onResult, onError,
                   query,
-                  zone = None, hint = None, label = None, rrtype = None, parse_dns = True, limit_left = 10):
+                  zone = None, hint = None, label = None, rrtype = None, parse_dns = True, limit_left = 10, verify = True):
         self.face = face
         self.query = query
         self.onResult = onResult
@@ -40,6 +40,7 @@ class SimpleQuery:
         self.rrtype = rrtype
         self.parse_dns = parse_dns
         self.limit_left = limit_left
+        self.verify = verify
 
     def _onVerify (self, dataPacket, status):
         if not status:
@@ -82,7 +83,10 @@ class SimpleQuery:
             # don't verify the outer part, it cannot be verified for now anyways
             data = ndn.Data.fromWire (data.content)
 
-        ndns.TrustPolicy.verifyAsync (self.face, data, self._onVerify, self.limit_left)
+        if self.verify:
+            ndns.TrustPolicy.verifyAsync (self.face, data, self._onVerify, self.limit_left)
+        else:
+            self._onVerify (data, True)
 
     def _onTimeout (self, interest):
         return self.onError ("Query timed out")
@@ -91,7 +95,7 @@ class SimpleQuery:
     def expressQueryForRaw (face,
                             onResult, onError,
                             query,
-                            zone = None, hint = None, label = None, rrtype = None, parse_dns = True, limit_left = 10):
+                            zone = None, hint = None, label = None, rrtype = None, parse_dns = True, limit_left = 10, verify = True):
         """
         This is the most basic type of querying.  The user has to explicity
         specify the authority zone, forwarding hint, label, and resource record type1
@@ -128,7 +132,7 @@ class SimpleQuery:
         :type parse_dns: bool
         """
 
-        _LOG.debug ("SimpleQuery.expressQueryForRaw: query: %s, hint: %s" % (query, hint))
+        _LOG.debug ("expressQueryForRaw: query: %s, hint: %s" % (query, hint))
 
         if hint and not hint.isPrefixOf (query):
             query = ndn.Name (hint).append ("\xF0.").append (query)
@@ -138,5 +142,5 @@ class SimpleQuery:
         state = SimpleQuery (face,
                              onResult, onError,
                              query,
-                             zone, hint, label, rrtype, parse_dns, limit_left)
+                             zone, hint, label, rrtype, parse_dns, limit_left, verify)
         face.expressInterest (query, state._onData, state._onTimeout)

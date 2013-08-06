@@ -47,6 +47,9 @@ parser.add_argument('--raw', dest='raw', action='store_true', default=False,
 parser.add_argument('--hint', '--fh', '-f', dest='fh', type=str,
                     help='''Forwarding hint to use for the query''')
 
+parser.add_argument ('-z', dest='zone_fh_query', action='store_true', default=False,
+                     help='''Make query for zone's forwarding hint''')
+
 parser.add_argument('zone', metavar='zone', type=str,
                     help='''Zone to query (will not be needed later)''')
 
@@ -89,7 +92,10 @@ if( __name__ == '__main__' ):
             sys.stderr.write ("ERROR: For simple query, ``name'' (label) argument is mandatory\n")
             exit (5)
 
+    needrun = True
     def onResult (result, msg):
+        global needrun, loop
+        
         if not args.quiet:
             print ";; Got data packet [%s]" % result.name
             print ";;       signed by [%s]" % result.signedInfo.keyLocator.keyName
@@ -99,15 +105,19 @@ if( __name__ == '__main__' ):
             for rrset in msg.answer:
                 print rrset.to_text ()
 
+        needrun = False
         loop.stop ()
 
     def onError (errmsg, *k, **kw):
+        global needrun, loop
+
         print ";; %s" % errmsg
+        needrun = False
         loop.stop ()
 
     face = ndn.Face ()
-    # ndns.query.SimpleQuery.expressQueryForRaw (face, zone, onResult, onError)
-
+    loop = ndn.EventLoop (face)
+    
     if args.simple:
         if not args.raw:
             ndns.CachingQueryObj.expressQueryFor (face, 
@@ -117,12 +127,14 @@ if( __name__ == '__main__' ):
             ndns.CachingQueryObj.expressQueryForRaw (face, 
                                                      onResult, onError,
                                                      zone, hint = args.fh)
+    elif args.zone_fh_query:
+        ndns.CachingQueryObj.expressQueryForZoneFh (face, onResult, onError, zone)
     else:
         args.rrtype = args.name
-        ndns.CachingQueryObj.expressQuery (zone, args.rrtype)
-    
-    loop = ndn.EventLoop (face)
-    loop.run ()
+        ndns.CachingQueryObj.expressQuery (face, onResult, onError, zone, args.rrtype)
+
+    if needrun:
+        loop.run ()
 
     # try:
     #     if args.simple:

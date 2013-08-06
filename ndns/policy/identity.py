@@ -93,7 +93,7 @@ class IdentityPolicy:
                     break
                 zone = zone.append (comp)
 
-            nextLevelProcessor = NextLevelProcessor (face, self, dataPacket, onVerify, limit_left)
+            nextLevelProcessor = NextLevelProcessor (face, self, dataPacket, onVerify, limit_left, key_name)
 
             if comp != "DNS":
                 face.expressInterest (key_name, nextLevelProcessor.onData, nextLevelProcessor.onTimeout)
@@ -101,16 +101,11 @@ class IdentityPolicy:
                 ndns.CachingQueryObj.expressQueryForRaw (face, 
                                                          nextLevelProcessor.onKeyData, nextLevelProcessor.onError,
                                                          key_name,
-                                                         hint = None, parse_dns = False, limit_left = limit_left-1)
+                                                         hint = None, parse_dns = False, limit_left = limit_left-1) #, verify = False)
             else:
-                ndns.CachingQueryObj.expressQueryForRaw (face, 
-                                                         nextLevelProcessor.onKeyData, nextLevelProcessor.onError,
-                                                         key_name,
-                                                         hint = None, parse_dns = False, limit_left = limit_left-1)
-                # resolver = Resolver (face, nextLevelProcessor)
-                # ndns.CachingQueryObj.expressQuery (face,
-                #                                    resolver.onHintData, nextLevelProcessor.onError,
-                #                                    zone, dns.rdatatype.FH, True)
+                ndns.CachingQueryObj.expressQueryForZoneFh (face, 
+                                                            nextLevelProcessor.onHintData, nextLevelProcessor.onError,
+                                                            zone)
 
     def authorize_by_anchor (self, data_name, key_name):
         # _LOG.debug ("== authorize_by_anchor == data: [%s], key: [%s]" % (data_name, key_name))
@@ -141,12 +136,13 @@ class IdentityPolicy:
 # Helper classes
 
 class NextLevelProcessor:
-    def __init__ (self, face, policy, dataPacket, parentCallback, limit_left):
+    def __init__ (self, face, policy, dataPacket, parentCallback, limit_left, key_name):
         self.face = face
         self.policy = policy
         self.dataPacket = dataPacket
         self.parentCallback = parentCallback
         self.limit_left = limit_left
+        self.key_name = key_name
 
     def onData (self, interest, keyDataPacket):
         key = ndn.Key.createFromDER (public = keyDataPacket.content)
@@ -165,40 +161,26 @@ class NextLevelProcessor:
     def onError (self, error):
         self.parentCallback (self.dataPacket, False)
 
-
     def __call__ (self, keyDataPacket, status):
         # don't need to do anything with the keyDataPacket
         if not status:
             self.parentCallback (self.dataPacket, False)
             return
 
-        if self.dataPacket.signedInfo.type == ndn.CONTENT_KEY:
-            if len(self.policy.trustedCache) > self.policy.trustedCacheLimit:
-                self.policy.trustedCache = {}
+        if len(self.policy.trustedCache) > self.policy.trustedCacheLimit:
+            self.policy.trustedCache = {}
 
-            self.policy.trustedCache[str(self.dataPacket.name)] = [ndn.Key.createFromDER (public = self.dataPacket.content),
-                                                                   int (time.time ()) + self.dataPacket.signedInfo.freshnessSeconds]
-
+        self.policy.trustedCache[str(keyDataPacket.name)] = [ndn.Key.createFromDER (public = keyDataPacket.content),
+                                                             int (time.time ()) + keyDataPacket.signedInfo.freshnessSeconds]
+        
         self.parentCallback (self.dataPacket, True)
 
     def onKeyData (self, keyDataPacket, not_used):
         self.onData (None, keyDataPacket)
 
-
-# class Resolver:
-#     def __init__ (self, face, processor):
-#         self.face = face
-#         self.processor = processor
-
-#     def onHintData (self, fh_result, fh_msg):
-#         hint = random.choice (fh_msg.answer[0].items).hint
-#         ndns.CachingQueryObj.expressQueryForRaw (self.face,
-#                                                  key_name, 
-#                                                  self.onFhData, self.onError,
-#                                                  hint = hint, parse_dns = False)
-
-#     def onFhData (self, keyDataPacket, not_used):
-#         self.processor.onData (None, keyDataPacket)
-
-#     def onError (self, error):
-#         self.processor.onError (error)
+    def onHintData (self, fh_result, fh_msg):
+        hint = random.choice (fh_msg.answer[0].items).hint
+        ndns.CachingQueryObj.expressQueryForRaw (self.face,
+                                                 self.onKeyData, self.onError,
+                                                 self.key_name, 
+                                                 hint = hint, parse_dns = False, limit_left = self.limit_left-1) #, verify = False)
