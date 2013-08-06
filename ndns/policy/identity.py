@@ -100,17 +100,20 @@ class IdentityPolicy:
                 face.expressInterest (key_name, nextLevelProcessor.onData, nextLevelProcessor.onTimeout)
             elif len (zone) == 0:
                 keyResolver = KeyResolver (nextLevelProcessor)
-                ndns.CachingQueryObj.expressQueryForRaw (key_name, face, 
-                                                         keyResolver.onKeyData, nextLevelProcessor.onError, nextLevelProcessor.onTimeout,
+                ndns.CachingQueryObj.expressQueryForRaw (face, 
+                                                         keyResolver.onKeyData, nextLevelProcessor.onError,
+                                                         key_name,
                                                          hint = None, parse_dns = False)
             else:
-                try:
-                    resolver = Resolver (face, nextLevelProcessor)
-                    ndns.CachingQueryObj.expressQueryFor (face, zone, dns.rdatatype.FH, True,
-                                                          resolver.onHintData, nextLevelProcessor.onError, nextLevelProcessor.onTimeout)
-
-                except ndns.query.QueryException:
-                    face.expressInterest (key_name, nextLevelProcessor.onData, nextLevelProcessor.onTimeout)
+                keyResolver = KeyResolver (nextLevelProcessor)
+                ndns.CachingQueryObj.expressQueryForRaw (face, 
+                                                         keyResolver.onKeyData, nextLevelProcessor.onError,
+                                                         key_name,
+                                                         hint = None, parse_dns = False)
+                # resolver = Resolver (face, nextLevelProcessor)
+                # ndns.CachingQueryObj.expressQuery (face,
+                #                                    resolver.onHintData, nextLevelProcessor.onError,
+                #                                    zone, dns.rdatatype.FH, True)
 
     def authorize_by_anchor (self, data_name, key_name):
         # self._LOG.debug ("== authorize_by_anchor == data: [%s], key: [%s]" % (data_name, key_name))
@@ -196,8 +199,9 @@ class Resolver:
 
     def onHintData (self, fh_result, fh_msg):
         hint = random.choice (fh_msg.answer[0].items).hint
-        ndns.CachingQueryObj.expressQueryForRaw (key_name, self.face,
-                                                 self.onFhData, self.onError, self.processor.onTimeout,
+        ndns.CachingQueryObj.expressQueryForRaw (self.face,
+                                                 key_name, 
+                                                 self.onFhData, self.onError,
                                                  hint = hint, parse_dns = False)
 
     def onFhData (self, keyDataPacket, not_used):

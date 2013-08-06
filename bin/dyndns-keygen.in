@@ -10,7 +10,7 @@
 # 
 
 import sys
-sys.path = ["@LIBDIR@", "@LIBDIR@/lib", "@LIBDIR@/ndns/lib"] + sys.path
+sys.path = ["@LIBDIR@/ndns"] + sys.path
 
 import argparse, getpass, time, os
 from ndns import dyndns

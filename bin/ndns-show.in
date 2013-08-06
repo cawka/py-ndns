@@ -10,7 +10,7 @@
 # 
 
 import sys
-sys.path = ["@LIBDIR@", "@LIBDIR@/lib", "@LIBDIR@/ndns/lib"] + sys.path
+sys.path = ["@LIBDIR@/ndns"] + sys.path
 
 import argparse
 import dns.rdataclass
@@ -61,11 +61,29 @@ if( __name__ == '__main__' ):
         sys.stderr.write ("ERROR: zone [%s] is not configured\n" % zone_ndn)
         exit (1)
 
+    # label = dns.name.from_text (args.label).relativize (dns.name.root)
     rrset = _ndns.query (ndns.RRSet).with_parent (zone).filter_by (label = args.label, 
                                                                    rtype = dns.rdatatype.from_text (args.type)).first ()
     sys.stdout.write (";; Origin: %s (%s)\n" % (zone_dns, zone_ndn))
     if rrset:
         print ";; DATA packet [%s]" % rrset.ndndata.name
-        print rrset.dns_msg.to_text (origin = zone_dns)
+
+        if rrset.rtype == dns.rdatatype.NDNCERT:
+            rr = rrset.rrs[0]
+            print ("%s %d %s %s   %s" % (rrset.dns_label,
+                                         rr.ttl,
+                                         dns.rdataclass.to_text (rrset.rclass), 
+                                         dns.rdatatype.to_text (rrset.rtype), 
+                                         rr.dns_rrdata.to_text ()))
+        else:
+            rrset = rrset.dns_msg.answer[0]
+            for rdata in rrset.items:
+                print ("%s %d %s %s   %s" % (rrset.name.relativize (zone_dns), 
+                                             rrset.ttl,
+                                             dns.rdataclass.to_text (rdata.rdclass), 
+                                             dns.rdatatype.to_text (rdata.rdtype), 
+                                             rdata.to_text ()))
+
+        
     else:
         sys.stdout.write (";; Requested RR set is not found\n");

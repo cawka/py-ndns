@@ -11,7 +11,7 @@
 
 import sys
 _WORKDIR = sys.path[0]
-sys.path = ["@LIBDIR@", "@LIBDIR@/lib", "@LIBDIR@/ndns/lib"] + sys.path
+sys.path = ["@LIBDIR@/ndns"] + sys.path
 
 import argparse, logging, logging.handlers
 import os, functools, signal, daemon

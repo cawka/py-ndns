@@ -7,3 +7,6 @@
 [submodule "contrib/py-setproctitle"]
 	path = contrib/py-setproctitle
 	url = git://github.com/dvarrazzo/py-setproctitle.git
+[submodule "contrib/docs"]
+	path = contrib/docs
+    url = git://github.com/cawka/ndns.git

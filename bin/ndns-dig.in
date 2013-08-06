@@ -11,7 +11,7 @@
 
 # make sure modules from lib/ are loaded
 import sys, os
-sys.path = ["@LIBDIR@", "@LIBDIR@/lib", "@LIBDIR@/ndns/lib"] + sys.path
+sys.path = ["@LIBDIR@/ndns"] + sys.path
 
 import argparse, logging
 
@@ -30,8 +30,6 @@ parser = argparse.ArgumentParser(description='NDNS client tool')
 parser.add_argument('--ndn', dest='ndn', action='store_true', default=False,
                     help='''Expect NDN name, otherwise DNS name is expected as input for the label''')
 
-parser.add_argument('-d', dest='debug', action='store_true', default=False,
-                    help='''Include debug information in log output''')
 parser.add_argument('-v', dest='verbose', action='store_true', default=False,
                     help='''Include verbose information in log output''')
 parser.add_argument('--trust', dest='verbose_trust', action='store_true', default=False,
@@ -60,17 +58,17 @@ parser.add_argument('rrtype', metavar='rrtype', type=str, nargs='?', default='FH
 args = parser.parse_args()
 
 _LOG = logging.getLogger ("ndns")
-_LOG.setLevel (logging.DEBUG if (args.debug) else logging.WARN)
-if args.verbose:
-    _LOG.setLevel (logging.INFO)
+_LOG.setLevel (logging.DEBUG)
+if not args.verbose:
+    _LOG.setLevel (logging.WARN)
 
-if not args.verbose_trust:
-    logging.getLogger ("ndns.policy.Identity").setLevel (logging.WARN)
+# if not args.verbose_trust:
+#     logging.getLogger ("ndns.policy.Identity").setLevel (logging.WARN)
 
 _handler = logging.StreamHandler (sys.stderr)
-_handler.setLevel (logging.DEBUG if (args.debug) else logging.WARN)
-if args.verbose:
-    _handler.setLevel (logging.INFO)
+# _handler.setLevel (logging.DEBUG if (args.debug) else logging.WARN)
+# if args.verbose:
+#     _handler.setLevel (logging.INFO)
 _handler.setFormatter (logging.Formatter('%(asctime)s %(name)s [%(levelname)s]  %(message)s', '%H:%M:%S'))
 _LOG.addHandler (_handler)
 
@@ -81,15 +79,15 @@ _LOG.addHandler (_handler)
 # main
 if( __name__ == '__main__' ):
     zone = ndn.Name (args.zone)
-
-    # if args.simple:
-    #     if args.name:
-    #         if not args.ndn:
-    #             args.name = ndns.ndnify (args.name)
-    #         name = ndn.Name (args.name)
-    #     elif not args.raw:
-    #         sys.stderr.write ("ERROR: For simple query, ``name'' (label) argument is mandatory\n")
-    #         exit (5)
+    
+    if args.simple:
+        if args.name:
+            if not args.ndn:
+                args.name = ndns.ndnify (args.name)
+            name = ndn.Name (args.name)
+        elif not args.raw:
+            sys.stderr.write ("ERROR: For simple query, ``name'' (label) argument is mandatory\n")
+            exit (5)
 
     def onResult (result, msg):
         if not args.quiet:
@@ -108,8 +106,21 @@ if( __name__ == '__main__' ):
         loop.stop ()
 
     face = ndn.Face ()
-    ndns.query.SimpleQuery.expressQueryForRaw (face, zone, onResult, onError)
+    # ndns.query.SimpleQuery.expressQueryForRaw (face, zone, onResult, onError)
 
+    if args.simple:
+        if not args.raw:
+            ndns.CachingQueryObj.expressQueryFor (face, 
+                                                  onResult, onError, 
+                                                  zone, args.fh, name, args.rrtype)
+        else:
+            ndns.CachingQueryObj.expressQueryForRaw (face, 
+                                                     onResult, onError,
+                                                     zone, hint = args.fh)
+    else:
+        args.rrtype = args.name
+        ndns.CachingQueryObj.expressQuery (zone, args.rrtype)
+    
     loop = ndn.EventLoop (face)
     loop.run ()
 

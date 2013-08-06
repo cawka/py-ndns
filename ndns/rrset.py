@@ -47,12 +47,12 @@ class RRSet (Base):
     rrs = relationship ("RR", backref="rrset",
                         cascade="all, delete, delete-orphan")
 
-    id = Column (Integer, primary_key = True)
-    zone_id = Column (Integer, ForeignKey ("zones.id", onupdate="CASCADE", ondelete="CASCADE"))
-    label = Column (String)
-    rclass = Column (Integer)
-    rtype = Column (Integer)
-    _ndndata = Column ("ndndata", Binary)
+    id = Column (Integer, index=True, primary_key = True)
+    zone_id = Column (Integer, ForeignKey ("zones.id", onupdate="CASCADE", ondelete="CASCADE"), index=True)
+    label = Column (String, index=True)
+    rclass = Column (Integer, index=True)
+    rtype = Column (Integer, index=True)
+    _ndndata = Column ("ndndata", Binary, index=True)
     
     zone_id_label_rclass_rtype = UniqueConstraint ("zone_id", "label", "rclass", "rtype")
 

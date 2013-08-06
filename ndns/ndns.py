@@ -40,24 +40,34 @@ Pr3CwyBRloTJJbm5kf+pGuJh4fE9Qk0i/fS9Xs6gFup3oPnr+wFFjJObnRTrUsaM
                 ]],
     rules = [["^(<.*>*)<DNS>(<.*>*)<.*><NDNCERT>$", "\\1\\2", "^(<.*>*)<DNS>(<.*>*)$", "\\1\\2"],
              # ["^(<.*>*)<DNS>(<.*>*)<.*><NDNCERT>$", "\\1\\2", "^(<.*>*)<(.*)\.(.*)>DNS(<.*>*)$", "\\1\\3\\2\\4"],
-             ["^(<.*>*)<DNS>(<.*>*)<NDNCERT>$", "\\1\\2", "(.*)", "\\1"]]
+             ["^(<.*>*)<DNS>(<.*>*)<NDNCERT>$", "\\1\\2", "(<.*>*)", "\\1"]]
     )
 
-# CachingQueryObj = query.CachingQuery ()
+CachingQueryObj = query.CachingQuery ()
+
+sessions = {}
 
 def ndns_session (libdir):
-    zonedb = "%s/ndns.db" % libdir
-    keydir = "%s/keys" % libdir
+    global sessions
+    
+    try:
+        return sessions[libdir]
+    except:
+    
+        zonedb = "%s/ndns.db" % libdir
+        keydir = "%s/keys" % libdir
 
-    db = create_engine ('sqlite:///%s' % zonedb)
-    # db.echo = True
+        db = create_engine ('sqlite:///%s' % zonedb)
+        # db.echo = True
     
-    Base.metadata.create_all (db)
+        Base.metadata.create_all (db)
     
-    sm = sessionmaker (bind = db)
-    session = sm ()
-    session.keydir = keydir
-    return session
+        sm = sessionmaker (bind = db)
+        session = sm ()
+        session.keydir = keydir
+
+        sessions[libdir] = session
+        return session
 
 def createSignedData (session, name, content, freshness, key, type = ndn.CONTENT_DATA):
     signingKey = key.private_key (session.keydir)

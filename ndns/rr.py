@@ -34,10 +34,10 @@ class RR (Base):
     """
     __tablename__ = "rrs"
 
-    id = Column (Integer, primary_key = True)
-    rrset_id = Column (Integer, ForeignKey ("rrsets.id", onupdate="CASCADE", ondelete="CASCADE"))
-    ttl = Column (Integer)
-    _rrdata = Column ("rrdata", Binary)
+    id = Column (Integer, index=True, primary_key = True)
+    rrset_id = Column (Integer, ForeignKey ("rrsets.id", onupdate="CASCADE", ondelete="CASCADE"), index=True)
+    ttl = Column (Integer, index=True)
+    _rrdata = Column ("rrdata", Binary, index=True)
 
     @property
     def rrdata (self):

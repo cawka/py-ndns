@@ -10,16 +10,10 @@
 # 
 
 import sys
-sys.path = ["@LIBDIR@", "@LIBDIR@/lib", "@LIBDIR@/ndns/lib"] + sys.path
+sys.path = ["@LIBDIR@/ndns"] + sys.path
 
 import argparse
-import dns.rdataclass
-import dns.rdatatype
-import dns.rdata
-import dns.rrset
-import dns.zone
-import ndns
-import ndn
+from ndns.tools.add import add
 
 ######################################################################
 ######################################################################
@@ -44,36 +38,4 @@ if (not args.zone):
 ######################################################################
 
 if( __name__ == '__main__' ):
-    _ndns = ndns.ndns_session (args.data_dir)
-
-    try:
-        zone_ndn = ndn.Name (args.zone)
-        zone_dns = ndns.dnsify (args.zone)
-    except NameError as e:
-        sys.stderr.write ("ERROR: %s\n\n" % e)
-        parser.print_help ()
-        exit (1)
-
-    zone = _ndns.query (ndns.Zone).filter (ndns.Zone.has_name (zone_ndn)).first ()
-    if not zone:
-        sys.stderr.write ("ERROR: zone [%s] is not configured\n" % zone_ndn)
-        exit (1)
-
-    origin = dns.name.from_text (zone_dns)
-
-    if args.rr:
-        zonefile = dns.zone.from_text (args.rr, origin = origin, check_origin = False)
-    else:
-        zonefile = dns.zone.from_file (sys.stdin, origin = origin, check_origin = False)
-    
-    default_rtt = zone.soa[0].rrs[0].ttl
-
-    for (name, ttl, rdata) in zonefile.iterate_rdatas ():
-        if ttl == 0:
-            ttl = default_rtt
-
-        print "Create record: '%s %s %d %s'" % (name, dns.rdatatype.to_text (rdata.rdtype), ttl, rdata.to_text ())
-        rrset = ndns.add_rr (_ndns, zone, origin, name, ttl, rdata)
-        rrset.refresh_ndndata (_ndns, zone.default_key)
-
-    _ndns.commit ()
+    add (args)

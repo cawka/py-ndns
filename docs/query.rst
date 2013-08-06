@@ -15,3 +15,4 @@ Caching query interface
 -----------------------
 
 .. autoclass:: ndns.query.CachingQuery
+
