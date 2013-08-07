@@ -21,6 +21,7 @@ from key import *
 from dnsifier import *
 from policy.identity import *
 import query
+import os
 
 import dns.rdataclass
 import dns.rdatatype
@@ -29,7 +30,7 @@ import dns.rrset
 import dns.zone
 
 TrustPolicy = IdentityPolicy (
-    anchors = [[ndn.Name ("/ndn/keys/ucla.edu/alex/%C1.M.K%00F%8D%E9%C3%EE4%7F%C1Mjqro%C6L%8DGV%91%90%03%24%ECt%95n%F3%9E%A6i%F1%C9"), 
+    anchors = [[ndn.Name ("/DNS-ROOT/%00%01"),
                 ndn.Name ("/"),
                 ndn.Key.createFromPEM (public = """-----BEGIN PUBLIC KEY-----
 MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDSPdPM7+DjDcUGHtwEDmkq4kO5
@@ -49,6 +50,7 @@ sessions = {}
 
 def ndns_session (libdir):
     global sessions
+    libdir = os.path.expanduser (libdir)
     
     try:
         return sessions[libdir]
