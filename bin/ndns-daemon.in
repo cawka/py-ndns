@@ -10,49 +10,38 @@
 #
 
 import sys
-_WORKDIR = sys.path[0]
 sys.path = ["@LIBDIR@/ndns"] + sys.path
 
-import argparse, logging, logging.handlers
-import os, functools, signal, daemon
-
-#install from contrib/
+import argparse
+import logging, logging.handlers
+import signal
 import setproctitle
-import ndn
-import dns.rdataclass, dns.rdatatype, dns.rdata, dns.rrset, dns.zone
 
-# part of lib/
-import ndns
-from ndns.policy.identity import *
-import dns.rdtypes.IN.NDNAUTH
-import dns.rdtypes.IN.NEXISTS
-import dns.rdtypes.IN.NDNCERTSEQ
+from ndns.tools.ndns_daemon import NdnsDaemon
 
 ######################################################################
 ######################################################################
 ######################################################################
 
 parser = argparse.ArgumentParser(description='NDNS daemon')
-parser.add_argument('-f', dest='foreground', action='store_true', default=False,
-                    help='''Keep daemon in foreground (do not daemonize)''')
-parser.add_argument('-d', dest='debug', action='store_true', default=False,
-                    help='''Include debug information in log output''')
+parser.add_argument('-v', dest='debug', action='store_true', default=False,
+                    help='''Output verbose logging''')
 parser.add_argument('-q', dest='quiet', action='store_true', default=False,
-                    help='''Be quiet and do not write anything to stderr''')
+                    help='''Be quiet and do not do any logging to standard output or stderr''')
 parser.add_argument('-l', dest='logfile', type=str,
                     help='''Write logging to the specified logfile''')
 parser.add_argument('--prefix-discovery', dest='prefix_discovery', action='store_true', default=False,
                     help='''Enables automatic prefix discovery''')
 parser.add_argument('--data-dir', dest='data_dir', type=str, default="@LOCALSTATEDIR@/ndns",
                     help='''Directory that will store NDNS database and key files [default: @LOCALSTATEDIR@/ndns]''')
-parser.add_argument('--scopes', dest='scopes', type=str, default="",
-                    help='''Additional forwarding hint scopes (comma separated list)''')
+parser.add_argument('--scope', dest='scopes', action='append', type=str, default=[],
+                    help='''Additional forwarding hint scope (may be repeated multiple times for several additional scopes)''')
 args = parser.parse_args()
 
-_LOG = logging.getLogger ("ndns")
+_LOG = logging.getLogger ("")
 _LOG.setLevel (logging.DEBUG if (args.debug) else logging.WARN)
 
-if args.foreground and not args.quiet:
+if not args.quiet:
     _handler = logging.StreamHandler (sys.stderr)
     _handler.setLevel (logging.DEBUG if (args.debug) else logging.WARN)
     _handler.setFormatter (logging.Formatter('%(asctime)s %(name)s [%(levelname)s]  %(message)s', '%H:%M:%S'))
@@ -64,341 +53,29 @@ if args.logfile:
     _handler.setFormatter (logging.Formatter('%(asctime)s %(name)s [%(levelname)s]  %(message)s'))
     _LOG.addHandler (_handler)
 
-if ((args.quiet or not args.foreground) and not args.logfile):
+if (args.quiet and not args.logfile):
     _LOG.addHandler (logging.NullHandler ())
 
-_LOG = logging.getLogger ("ndns.Daemon")
-
 ######################################################################
 ######################################################################
 ######################################################################
 
-class NdnsDaemon:
-#public:
-    def __init__ (self):
-        setproctitle.setproctitle ("ndns-daemon")
-        self._zones = []
-        self._scopes = []
-        self._autoScope = []
-
-    def run (self):
-        _LOG.info ('Daemon started')
-
-        self._ndns = ndns.ndns_session ()
-        self._scopes = self._ndns.scopes
-        self._face = ndn.Face ()
-
-        self._startZoneServing ()
-
-        self._threadPool = ThreadPool (processes = 1)
-        self._eventLoop = ndn.EventLoop (self._face)
-        self._eventLoop.run ()
-
-        _LOG.info ('Daemon stopped')
-
-    def terminate (self):
-        self._threadPool.terminate ()
-        self._threadPool.join ()
-        self._stopZoneServing ()
-        self._eventLoop.stop ()
-        self._face = None
-        self._ndns = None
-
-    def reloadConfig (self):
-        _LOG.info ('Reload zone information')
-        self._stopZoneServing ()
-        self._startZoneServing ()
-
-    def updateLocalPrefix (self, oldPrefix, newPrefix):
-        _LOG.info ("Update local prefix from [%s] to [%s]" % (oldPrefix, newPrefix))
-        self._eventLoop.execute (functools.partial (self._updateLocalPrefix_Execute, newPrefix))
-
-#private:
-    def _updateLocalPrefix_Execute (self, newPrefix):
-        self._stopZoneServing ()
-        self._autoScope = [ newPrefix ]
-        self._startZoneServing ()
-        
-    def _enableZone (self, zone):
-        name = zone.name
-
-        self._face.setInterestFilterSimple (name.append ("DNS"),
-                                            functools.partial (self._onRequest, ndn.Name (), zone))
-
-        activeScopes = []
-        for scope in self._scopes + self._autoScope:
-            if not scope.isPrefixOf (name):
-                activeScopes.append (str (scope))
-                self._face.setInterestFilterSimple (scope.append ("\xF0.").append (name).append ("DNS"),
-                                                    functools.partial (self._onRequest, scope.append ("\xF0."), zone))
-        _LOG.info ('>> Start serving zone [%s] (%s)' % (name, activeScopes))
-
-    def _disableZone (self, zone):
-        name = zone.name
-
-        self._face.clearInterestFilter (name.append ("DNS"))
-
-        activeScopes = []
-        for scope in self._scopes + self._autoScope:
-            if not scope.isPrefixOf (name):
-                activeScopes.append (str (scope))
-                self._face.clearInterestFilter (scope.append ("\xF0.").append (name).append ("DNS"))
-
-        _LOG.info ('<< Stop serving zone [%s] (%s)' % (name, activeScopes))
-
-    def _startZoneServing (self):
-        for zone in self._ndns.query (ndns.Zone):
-            self._enableZone (zone)
-            self._zones.append (zone)
-
-    def _stopZoneServing (self):
-        for zone in self._zones:
-            self._disableZone (zone)
-        self._zones = []
-
-    def _onRequest (self, scope, zone, basename, interest):
-        _LOG.debug (">> scope [%s], zone [%s], basename [%s], interest [%s]" % (scope, zone.name, basename, interest.name))
-
-        if interest.name[-1] == "NDNUPDATE":
-            self._threadPool.apply_async (self._processDyNDNS, (zone, basename, interest, ))
-            return ndn.RESULT_OK
-
-        dataPacket = self._getRequestedData (zone, ndn.Name (basename [len(scope):]), ndn.Name (interest.name [len(scope):]))
-        if dataPacket:
-            if len (scope) == 0:
-                self._face.put (dataPacket)
-            else:
-                # will sign with real key, but not sure if it is really necessary
-                encapPacket = ndns.createSignedData (self._ndns, 
-                                                     scope.append (dataPacket.name),
-                                                     dataPacket.get_ccnb (), 
-                                                     dataPacket.signedInfo.freshnessSeconds,
-                                                     zone.default_key)
-                _LOG.debug ("Encapsulating into [%s]" % encapPacket.name)
-                self._face.put (encapPacket)
-
-        return ndn.RESULT_OK
-
-    def _getRequestedData (self, zone, basename, interestName):
-        _LOG.debug (">> REAL: basename [%s], interest [%s]" % (basename, interestName))
-
-        if interestName[-1][0] == '\xFD':
-            # allow version to be specified, but ignore it for the database lookup
-            request_name = ndn.Name (interestName[:-1])
-        else:
-            request_name = interestName
-
-        try:
-            rrtype = dns.rdatatype.from_text (request_name[-1])
-        except Exception, e:
-            _LOG.debug ("Invalid request: unknown or unrecognized RR type [%s] (%s)" % (request_name[-1], e))
-            return None
-
-        try:
-            label = dns.name.from_text (ndns.dnsify (str (ndn.Name (request_name[len(basename):-1])))).relativize (origin = dns.name.root)
-        except Exception, e:
-            _LOG.debug ("Invalid request: label [%s] cannot be dnsified (%s)" % (request_name[len(basename):-1], e))
-            return None
-
-        rrset = self._ndns.query (ndns.RRSet).with_parent (zone).filter_by (label = label.to_text (), rtype = rrtype).first ()
-
-        if not rrset:
-            # check if there is more a specific record:
-            more_specific_rrset = self._ndns.query (ndns.RRSet).\
-                with_parent (zone).\
-                filter (ndns.RRSet.label.like ("%%.%s" % label.to_text ()), ndns.RRSet.rtype == rrtype).first ()
-            if more_specific_rrset:
-
-                msg = dns.message.Message (id=0)
-                rrset = dns.rrset.RRset (zone.dns_name, dns.rdataclass.IN, dns.rdatatype.NDNAUTH)
-                # zone.soa[0].rrs[0].ttl
-                rrset.add (ttl = 1, rd = dns.rdtypes.IN.NDNAUTH.NDNAUTH (dns.rdataclass.IN, dns.rdatatype.NDNAUTH, zone.name))
-                msg.authority.append (rrset)
-
-                dataPacket = ndns.createSignedData (self._ndns, 
-                                                    interestName.appendVersion (), 
-                                                    msg.to_wire (origin = zone.dns_name), 
-                                                    # zone.soa[0].rrs[0].ttl, 
-                                                    1,
-                                                    zone.default_key)
-
-                _LOG.debug ("<< Requested record doesn't exist, but there is a more specific record. Returning NDNAUTH as [%s]" % dataPacket.name)
-                return dataPacket
-            else:
-                # _LOG.debug ("(!!! no action defined yet!!!) The requested record (%s %s) not found in zone [%s]" %
-                #             (label.to_text (), dns.rdatatype.to_text (rrtype), zone.name))
-
-                msg = dns.message.Message (id=0)
-                rrset = dns.rrset.RRset (label, dns.rdataclass.IN, dns.rdatatype.NEXISTS)
-                # zone.soa[0].rrs[0].ttl
-                rrset.add (ttl = 1, rd = dns.rdtypes.IN.NEXISTS.NEXISTS (dns.rdataclass.IN, dns.rdatatype.NEXISTS))
-                msg.answer.append (rrset)
-
-                dataPacket = ndns.createSignedData (self._ndns, 
-                                                    interestName.appendVersion (), 
-                                                    msg.to_wire (origin = zone.dns_name), 
-                                                    # zone.soa[0].rrs[0].ttl, 
-                                                    1,
-                                                    zone.default_key)
-
-                _LOG.debug ("<< Requested record nor more specific record exists. Returning NEXISTS as part of [%s]" % dataPacket.name)
-                return dataPacket
-
-        dataPacket = rrset.ndndata
-        if not interestName.isPrefixOf (dataPacket.name):
-            _LOG.debug ("Request is not in a canonical form (e.g., case mistmatch), requested data found, but cannot be returned")
-            _LOG.debug ("        Could be version mistmatch")
-            return None
-        else:
-            _LOG.debug ("<< Found a valid record, returning data object [%s]" % dataPacket.name)
-            return dataPacket
-
-    def _processDyNDNS (self, zone, basename, interest):
-        session = ndns.ndns.ndns_session ()
-        zone = session.query (ndns.Zone).filter_by (id = zone.id).first ()
-
-        for update in interest.name[len(basename):-1]:
-            try:
-                dataPacket = ndn.ContentObject.from_ccnb (update)
-                _LOG.debug ("Processing %s" % dataPacket.name)
-                
-                if dataPacket.name[:len(basename)] != basename[:]:
-                    _LOG.warn ("Record [%s] does not belong to the zone" % dataPacket.name)
-                    continue
-
-                if not ndns.TrustPolicy.verify (dataPacket):
-                    _LOG.warn ("Data [%s] packet cannot be verified" % dataPacket.name)
-                    continue
-
-                seqno = ndn.Name ().append (dataPacket.name[-1])
-                label = dns.name.from_text (ndns.dnsify (str (ndn.Name (dataPacket.name[len(basename):-2])))).relativize (origin = dns.name.root)
-                rtype = dataPacket.name[-2]
-
-                if not self._authorizeKey (session, zone, basename, dataPacket.signedInfo.keyLocator.keyName, seqno):
-                    _LOG.warn ("UPDATE is signed with unrecognizeable key [%s]" % dataPacket.signedInfo.keyLocator.keyName)
-                    continue
-
-                _LOG.info ("DyNDNS update authorized: [%s]" % dataPacket.name)
-                msg = dns.message.from_wire (dataPacket.content)
-                
-                if dns.opcode.from_flags (msg.flags) == dns.opcode.UPDATE:
-                    count = 0
-
-                    extra_msg = ""
-                    for dns_update in msg.authority:
-                        if not dns_update.deleting or len(dns_update.items) != 0:
-                            _LOG.warn ("Only delete update is allowed in this way")
-                            extra_msg = "%s\n%s" % (extra_msg, "Only delete update is allowed in this way")
-                            continue
-
-                        if dns_update.rdtype == dns.rdatatype.ANY:
-                            _LOG.warn ("Not supported update type: [%s]" % dns_update)
-                            extra_msg = "%s\n%s" % (extra_msg, "Only delete RRset update is allowed")
-                            continue
-
-                        if dns_update.rdtype == dns.rdatatype.NDNCERTSEQ:
-                            _LOG.warn ("NDNCERTSEQ cannot be updated remotely")
-                            extra_msg = "%s\n%s" % (extra_msg, "NDNCERTSEQ cannot be updated remotely")
-                            continue
-
-                        label = dns_update.name.relativize (zone.dns_name)
-                        rtype = dns.rdatatype.to_text (dns_update.rdtype)
-
-                        for rrset in session.query (ndns.RRSet).\
-                                with_parent (zone).\
-                                filter_by (label = label.to_text (), rclass = dns_update.rdclass, rtype = dns_update.rdtype):
-                            _LOG.debug ("Deleting [%s]" % rrset.ndndata.name)
-                            session.delete (rrset)
-                            count += 1
-
-                    session.commit ()
-                    result = ndns.createSignedData (session, interest.name.appendVersion (), "OK: Deleted %d RR sets%s" % (count, extra_msg), 1, zone.default_key)
-                    self._face.put (result)
-                else:
-                    dns_rrset = msg.answer[0]
-                    rrset = session.query (ndns.RRSet).\
-                        with_parent (zone).\
-                        filter_by (label = label.to_text (), rclass = dns_rrset.items[0].rdclass, rtype = dns_rrset.items[0].rdtype).\
-                        first ()
-                    
-                    if not rrset:
-                        rrset = ndns.RRSet (zone = zone, 
-                                            label = label.to_text (), 
-                                            rclass = dns_rrset.items[0].rdclass, rtype = dns_rrset.items[0].rdtype, 
-                                            ndndata = dataPacket)
-                    else:
-                        rrset.rrs = []
-                        rrset.ndndata = dataPacket
-                    
-                    for rdata in dns_rrset.items:
-                        rr = ndns.RR (rrset = rrset, ttl = dns_rrset.ttl, rrdata = rdata)
-                    
-                    session.commit ()
-                    
-                    result = ndns.createSignedData (session, interest.name.appendVersion (), "OK", 1, zone.default_key)
-                    self._face.put (result)
-
-            except Exception, e:
-                _LOG.warn ("Undecodeable component in DyNDNS update: [%s]" % update)
-                _LOG.warn ("%s" % e)
-                continue
-            
-    def _authorizeKey (self, session, zone, basename, keyName, seqno):
-        if (keyName[-1] != "NDNCERT"):
-            return False
-
-        key_label = dns.name.from_text (ndns.dnsify (str (ndn.Name (keyName[len(basename):-1])))).\
-            relativize (origin = dns.name.root)
-
-        key = session.query (ndns.RRSet).with_parent (zone).filter_by (label = key_label.to_text (), rtype = dns.rdatatype.NDNCERT).first ()
-        if not key:
-            _LOG.warn ("Key [%s] has been validated, but does not belong to the zone. Denying update" % keyName)
-            return False
-        
-        current_key_seq = session.query (ndns.RRSet).with_parent (zone).filter_by (label = key_label.to_text (), rtype = dns.rdatatype.NDNCERTSEQ).first ()
-        
-        if not current_key_seq:
-            current_key_seq = ndns.RRSet (label = key_label.to_text (), zone = zone, rclass = dns.rdataclass.IN, rtype = dns.rdatatype.NDNCERTSEQ)
-            rd = dns.rdtypes.IN.NDNCERTSEQ.NDNCERTSEQ (rdclass = dns.rdataclass.IN, rdtype = dns.rdatatype.NDNCERTSEQ, seq = ndn.Name ())
-            rr = ndns.RR (ttl = 0, rrdata = rd, rrset = current_key_seq)
-
-        if current_key_seq.rrs[0].dns_rrdata.seq >= seqno:
-            _LOG.warn ("Replay attack detected, denying the update with sequence number [%s]" % seqno)
-            return False
-
-        updated_rr = current_key_seq.rrs[0].dns_rrdata
-        updated_rr.seq = seqno
-        current_key_seq.rrs[0].rrdata = updated_rr
-        current_key_seq.refresh_ndndata (session, zone.default_key)
-        session.commit ()
-
-        return True
 
 # main
 if( __name__ == '__main__' ):
-    ndns_daemon = NdnsDaemon ()
+    setproctitle.setproctitle ("ndns-daemon")
+    ndns_daemon = NdnsDaemon (args.data_dir, args.scopes, enable_dyndns = True)
 
-    context = daemon.DaemonContext (
-        working_directory = _WORKDIR,
-        detach_process = not args.foreground,
-        )
-    if args.foreground:
-        context.stdout = sys.stdout
-        context.stderr = sys.stderr
+    signal.signal (signal.SIGTERM, lambda signum, frame: ndns_daemon.terminate ())
+    signal.signal (signal.SIGQUIT, lambda signum, frame: ndns_daemon.terminate ())
+    signal.signal (signal.SIGINT,  lambda signum, frame: ndns_daemon.terminate ())
+    signal.signal (signal.SIGUSR1, lambda signum, frame: ndns_daemon.reloadConfig ())
 
-    context.signal_map = {
-        signal.SIGTERM: lambda signum, frame: ndns_daemon.terminate (),
-        signal.SIGQUIT: lambda signum, frame: ndns_daemon.terminate (),
-        signal.SIGINT:  lambda signum, frame: ndns_daemon.terminate (),
-        signal.SIGUSR1: lambda signum, frame: ndns_daemon.reloadConfig (),
-    }
+    if args.prefix_discovery:
+        discovery = ndn.LocalPrefixDiscovery (periodicity = 300)
+        discovery.subscribe ("ndns", ndns_daemon.updateLocalPrefix)
 
-    with context:
-        if args.prefix_discovery:
-            discovery = ndn.LocalPrefixDiscovery (periodicity = 300)
-            discovery.subscribe ("ndns", ndns_daemon.updateLocalPrefix)
+    ndns_daemon.run ()
 
-        ndns_daemon.run ()
-
-        if args.prefix_discovery:
-            discovery.shutdown ()
+    if args.prefix_discovery:
+        discovery.shutdown ()
