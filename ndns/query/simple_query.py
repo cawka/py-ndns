@@ -42,54 +42,6 @@ class SimpleQuery:
         self.limit_left = limit_left
         self.verify = verify
 
-    def _onVerify (self, dataPacket, status):
-        if not status:
-            return self.onError ("Query answer not trusted")
-
-        if self.parse_dns:
-            try:
-                msg = dns.message.from_wire (dataPacket.content)
-            except:
-                if not self.rrtype:
-                    self.rrtype = self.query[-1] if self.query[-1][0] != '\xFD' else self.query[-2]
-
-                if self.rrtype == "NDNCERT":
-                    if not self.zone or not self.label:
-                        matches = ndn.nre.match ("(<>*)<DNS>(<>*)<NDNCERT>", self.query)
-                        if not matches:
-                            return self.onError ("Incorrectly formatted query [%s]" % self.query)
-
-                        dns_zone = dns.name.from_text (dnsify (str (matches.expand ("\\1"))))
-                        dns_label = dns.name.from_text (dnsify (str (matches.expand ("\\2"))), origin = dns_zone)
-                    else:
-                        dns_zone = dns.name.from_text (dnsify (str (self.zone)))
-                        dns_label = dns.name.from_text (dnsify (str (self.label)), origin = dns_zone)
-
-                    ndncert = dns.rdtypes.IN.NDNCERT.NDNCERT (dns.rdataclass.IN, dns.rdatatype.NDNCERT, dataPacket.content)
-                    rrset = dns.rrset.RRset (dns_label, dns.rdataclass.IN, dns.rdatatype.NDNCERT)
-                    rrset.add (ttl = dataPacket.signedInfo.freshnessSeconds, rd = ndncert)
-
-                    msg = dns.message.Message (id=0)
-                    msg.answer.append (rrset)
-                else:
-                    msg = dns.message.from_wire (dataPacket.content)
-        else:
-            msg = None
-
-        return self.onResult (dataPacket, msg)
-
-    def _onData (self, interest, data):
-        if self.hint:
-            # don't verify the outer part, it cannot be verified for now anyways
-            data = ndn.Data.fromWire (data.content)
-
-        if self.verify:
-            ndns.TrustPolicy.verifyAsync (self.face, data, self._onVerify, self.limit_left)
-        else:
-            self._onVerify (data, True)
-
-    def _onTimeout (self, interest):
-        return self.onError ("Query timed out")
 
     @staticmethod
     def expressQueryForRaw (face,
@@ -144,3 +96,52 @@ class SimpleQuery:
                              query,
                              zone, hint, label, rrtype, parse_dns, limit_left, verify)
         face.expressInterest (query, state._onData, state._onTimeout)
+
+    def _onData (self, interest, data):
+        if self.hint:
+            # don't verify the outer part, it cannot be verified for now anyways
+            data = ndn.Data.fromWire (data.content)
+
+        if self.verify:
+            ndns.TrustPolicy.verifyAsync (self.face, data, self._onVerify, self.limit_left)
+        else:
+            self._onVerify (data, True)
+
+    def _onTimeout (self, interest):
+        return self.onError ("Query timed out")
+
+    def _onVerify (self, dataPacket, status):
+        if not status:
+            return self.onError ("Query answer not trusted")
+
+        if self.parse_dns:
+            try:
+                msg = dns.message.from_wire (dataPacket.content)
+            except:
+                if not self.rrtype:
+                    self.rrtype = self.query[-1] if self.query[-1][0] != '\xFD' else self.query[-2]
+
+                if self.rrtype == "NDNCERT":
+                    if not self.zone or not self.label:
+                        matches = ndn.nre.match ("(<>*)<DNS>(<>*)<NDNCERT>", self.query)
+                        if not matches:
+                            return self.onError ("Incorrectly formatted query [%s]" % self.query)
+
+                        dns_zone = dns.name.from_text (dnsify (str (matches.expand ("\\1"))))
+                        dns_label = dns.name.from_text (dnsify (str (matches.expand ("\\2"))), origin = dns_zone)
+                    else:
+                        dns_zone = dns.name.from_text (dnsify (str (self.zone)))
+                        dns_label = dns.name.from_text (dnsify (str (self.label)), origin = dns_zone)
+
+                    ndncert = dns.rdtypes.IN.NDNCERT.NDNCERT (dns.rdataclass.IN, dns.rdatatype.NDNCERT, dataPacket.content)
+                    rrset = dns.rrset.RRset (dns_label, dns.rdataclass.IN, dns.rdatatype.NDNCERT)
+                    rrset.add (ttl = dataPacket.signedInfo.freshnessSeconds, rd = ndncert)
+
+                    msg = dns.message.Message (id=0)
+                    msg.answer.append (rrset)
+                else:
+                    msg = dns.message.from_wire (dataPacket.content)
+        else:
+            msg = None
+
+        return self.onResult (dataPacket, msg)

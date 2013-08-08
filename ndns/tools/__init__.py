@@ -9,3 +9,11 @@
 # Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
 # 
 
+class Params (object):
+    def __init__ (self, **kwargs):
+        for param in kwargs:
+            self.__setattr__ (param, kwargs.get (param))
+
+    def __getattr__ (self, name):
+        return None
+

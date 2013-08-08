@@ -13,6 +13,7 @@ import ndn
 import dns.rdataclass, dns.rdatatype, dns.rdata, dns.rrset, dns.zone
 
 import ndns
+import sys
 from StringIO import StringIO
 
 def dig (args, out = None):

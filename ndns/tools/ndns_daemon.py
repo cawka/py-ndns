@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- Mode:python; c-file-style:"gnu"; indent-tabs-mode:nil -*- */
-# 
+#
 # Copyright (c) 2013, Regents of the University of California
 #                     Alexander Afanasyev
-# 
+#
 # BSD license, See the doc/LICENSE file for more information
-# 
+#
 # Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
 #
 
@@ -24,12 +24,12 @@ import dns.rdtypes.IN.NDNCERTSEQ
 
 _LOG = logging.getLogger ("ndns.Daemon")
 
-class NdnsDaemon:
+class NdnsDaemon (object):
 #public:
     def __init__ (self, data_dir, scopes = [], enable_dyndns = True):
         self.data_dir = data_dir
-        self._scopes = scopes
-        
+        self._scopes = [ndn.Name (scope) for scope in scopes]
+
         self._zones = []
         self._autoScope = []
         self._enable_dyndns = enable_dyndns
@@ -42,7 +42,7 @@ class NdnsDaemon:
 
         if self._enable_dyndns:
             self._dyndns = DyndnsDaemon (self.data_dir, self._ndns, self._face)
-        
+
         self._startZoneServing ()
 
         self._eventLoop = ndn.EventLoop (self._face)
@@ -70,7 +70,7 @@ class NdnsDaemon:
         self._stopZoneServing ()
         self._autoScope = [ newPrefix ]
         self._startZoneServing ()
-        
+
     def _enableZone (self, zone):
         name = zone.name
 
@@ -114,7 +114,7 @@ class NdnsDaemon:
         if self._enable_dyndns:
             if interest.name[-1] == "NDNUPDATE":
                 self._dyndns._processDyNDNS (zone, basename, interest)
-                return ndn
+                return
 
         dataPacket = self._getRequestedData (zone, ndn.Name (basename [len(scope):]), ndn.Name (interest.name [len(scope):]))
         if dataPacket:
@@ -122,27 +122,27 @@ class NdnsDaemon:
                 self._face.put (dataPacket)
             else:
                 # will sign with real key, but not sure if it is really necessary
-                encapPacket = ndns.createSignedData (self._ndns, 
+                encapPacket = ndns.createSignedData (self._ndns,
                                                      scope.append (dataPacket.name),
-                                                     dataPacket.get_ccnb (), 
+                                                     dataPacket.toWire (),
                                                      dataPacket.signedInfo.freshnessSeconds,
                                                      zone.default_key)
                 _LOG.debug ("Encapsulating into [%s]" % encapPacket.name)
                 self._face.put (encapPacket)
 
-        return ndn.RESULT_OK
+        return
 
     def _getRequestedData (self, zone, basename, interestName):
         _LOG.debug (">> REAL: basename [%s], interest [%s]" % (basename, interestName))
 
-        if interestName[-1][0] == '\xFD':
+        if str(interestName[-1])[0] == '\xFD':
             # allow version to be specified, but ignore it for the database lookup
             request_name = ndn.Name (interestName[:-1])
         else:
             request_name = interestName
 
         try:
-            rrtype = dns.rdatatype.from_text (request_name[-1])
+            rrtype = dns.rdatatype.from_text (str(request_name[-1]))
         except Exception, e:
             _LOG.debug ("Invalid request: unknown or unrecognized RR type [%s] (%s)" % (request_name[-1], e))
             return None
@@ -168,10 +168,10 @@ class NdnsDaemon:
                 rrset.add (ttl = 1, rd = dns.rdtypes.IN.NDNAUTH.NDNAUTH (dns.rdataclass.IN, dns.rdatatype.NDNAUTH, zone.name))
                 msg.authority.append (rrset)
 
-                dataPacket = ndns.createSignedData (self._ndns, 
-                                                    interestName.appendVersion (), 
-                                                    msg.to_wire (origin = zone.dns_name), 
-                                                    # zone.soa[0].rrs[0].ttl, 
+                dataPacket = ndns.createSignedData (self._ndns,
+                                                    interestName.appendVersion (),
+                                                    msg.to_wire (origin = zone.dns_name),
+                                                    # zone.soa[0].rrs[0].ttl,
                                                     1,
                                                     zone.default_key)
 
@@ -187,10 +187,10 @@ class NdnsDaemon:
                 rrset.add (ttl = 1, rd = dns.rdtypes.IN.NEXISTS.NEXISTS (dns.rdataclass.IN, dns.rdatatype.NEXISTS))
                 msg.answer.append (rrset)
 
-                dataPacket = ndns.createSignedData (self._ndns, 
-                                                    interestName.appendVersion (), 
-                                                    msg.to_wire (origin = zone.dns_name), 
-                                                    # zone.soa[0].rrs[0].ttl, 
+                dataPacket = ndns.createSignedData (self._ndns,
+                                                    interestName.appendVersion (),
+                                                    msg.to_wire (origin = zone.dns_name),
+                                                    # zone.soa[0].rrs[0].ttl,
                                                     1,
                                                     zone.default_key)
 
@@ -205,4 +205,3 @@ class NdnsDaemon:
         else:
             _LOG.debug ("<< Found a valid record, returning data object [%s]" % dataPacket.name)
             return dataPacket
-

@@ -13,7 +13,6 @@ def configure(conf):
     conf.check_python_version ((2,7))
     conf.check_python_headers ()
 
-    conf.check_python_module ('daemon')
     conf.check_python_module ('apscheduler')
     conf.check_python_module ('sqlalchemy')
 

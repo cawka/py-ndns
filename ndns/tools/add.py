@@ -47,7 +47,9 @@ def add (args):
         if ttl == 0:
             ttl = default_rtt
 
-        print "Create record: '%s %s %d %s'" % (name, dns.rdatatype.to_text (rdata.rdtype), ttl, rdata.to_text ())
+        if not args.quiet:
+            print "Create record: '%s %s %d %s'" % (name, dns.rdatatype.to_text (rdata.rdtype), ttl, rdata.to_text ())
+
         rrset = ndns.add_rr (_ndns, zone, origin, name, ttl, rdata)
         rrset.refresh_ndndata (_ndns, zone.default_key)
 

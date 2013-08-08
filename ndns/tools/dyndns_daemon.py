@@ -23,7 +23,7 @@ import dns.rdtypes.IN.NDNCERTSEQ
 
 _LOG = logging.getLogger ("dyndns.Daemon")
 
-class DyndnsDaemon:
+class DyndnsDaemon (object):
 #public:
     def __init__ (self, data_dir, session, face):
         self.data_dir = data_dir
@@ -35,7 +35,7 @@ class DyndnsDaemon:
 
         for update in interest.name[len(basename):-1]:
             try:
-                dataPacket = ndn.ContentObject.from_ccnb (update)
+                dataPacket = ndn.ContentObject.fromWire (update)
                 _LOG.debug ("Processing %s" % dataPacket.name)
                 
                 if dataPacket.name[:len(basename)] != basename[:]:
