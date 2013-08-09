@@ -20,11 +20,12 @@ class IdentityPolicy:
     """
     Implementation of an identity policy
     """
-    
-    def __init__ (self, anchors = [], rules = [], chain_limit = 10):
+
+    def __init__ (self, anchors = [], rules = [], chain_limit = 10, cachingQuery = None):
         self.anchors = anchors
         self.rules = rules
         self.chain_limit = chain_limit
+        self.cachingQuery = cachingQuery
 
         self.trustedCacheLimit = 10000
         self.trustedCache = {}
@@ -98,14 +99,14 @@ class IdentityPolicy:
             if comp != "DNS":
                 face.expressInterest (key_name, nextLevelProcessor.onData, nextLevelProcessor.onTimeout)
             elif len (zone) == 0:
-                ndns.CachingQueryObj.expressQueryForRaw (face, 
-                                                         nextLevelProcessor.onKeyData, nextLevelProcessor.onError,
-                                                         key_name,
-                                                         hint = None, parse_dns = False, limit_left = limit_left-1) #, verify = False)
+                self.cachingQuery.expressQueryForRaw (face,
+                                                      nextLevelProcessor.onKeyData, nextLevelProcessor.onError,
+                                                      key_name,
+                                                      hint = None, parse_dns = False, limit_left = limit_left-1) #, verify = False)
             else:
-                ndns.CachingQueryObj.expressQueryForZoneFh (face, 
-                                                            nextLevelProcessor.onHintData, nextLevelProcessor.onError,
-                                                            zone)
+                self.cachingQuery.expressQueryForZoneFh (face,
+                                                         nextLevelProcessor.onHintData, nextLevelProcessor.onError,
+                                                         zone, verify = True)
 
     def authorize_by_anchor (self, data_name, key_name):
         # _LOG.debug ("== authorize_by_anchor == data: [%s], key: [%s]" % (data_name, key_name))
@@ -172,7 +173,7 @@ class NextLevelProcessor:
 
         self.policy.trustedCache[str(keyDataPacket.name)] = [ndn.Key.createFromDER (public = keyDataPacket.content),
                                                              int (time.time ()) + keyDataPacket.signedInfo.freshnessSeconds]
-        
+
         self.parentCallback (self.dataPacket, True)
 
     def onKeyData (self, keyDataPacket, not_used):
@@ -180,7 +181,7 @@ class NextLevelProcessor:
 
     def onHintData (self, fh_result, fh_msg):
         hint = random.choice (fh_msg.answer[0].items).hint
-        ndns.CachingQueryObj.expressQueryForRaw (self.face,
-                                                 self.onKeyData, self.onError,
-                                                 self.key_name, 
-                                                 hint = hint, parse_dns = False, limit_left = self.limit_left-1) #, verify = False)
+        self.policy.cachingQuery.expressQueryForRaw (self.face,
+                                                     self.onKeyData, self.onError,
+                                                     self.key_name,
+                                                     hint = hint, parse_dns = False, limit_left = self.limit_left-1) #, verify = False)

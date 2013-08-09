@@ -28,7 +28,7 @@ class CachingQuery:
     def expressQuery (self, 
                       face,
                       onResult, onError,
-                      name, rrtype = dns.rdatatype.FH, parse_dns = True):
+                      name, rrtype = dns.rdatatype.FH, parse_dns = True, verify = True):
 
         # _LOG.debug ('expressQuery')
 
@@ -66,9 +66,9 @@ class CachingQuery:
 
         IterativeQuery.expressQuery (face, 
                                      ResultCacher (self.cache, key, onResult), onError, 
-                                     name, rrtype, parse_dns)
+                                     name, rrtype, parse_dns, verify)
 
-    def expressQueryForZoneFh (self, face, onResult, onError, zone):
+    def expressQueryForZoneFh (self, face, onResult, onError, zone, verify):
         key = str(zone)
         try:
             [result, msg, ttl] = self.cache_zone[key]
@@ -81,7 +81,7 @@ class CachingQuery:
             pass
 
         IterativeQuery.expressQueryForZoneFh (face, 
-                                              ResultCacher (self.cache_zone, key, onResult), onError, zone)
+                                              ResultCacher (self.cache_zone, key, onResult), onError, zone, verify)
         
     def expressQueryForRaw (self,
                             face,

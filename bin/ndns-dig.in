@@ -46,6 +46,9 @@ parser.add_argument('--hint', '--fh', '-f', dest='fh', type=str,
 parser.add_argument ('-z', dest='zone_fh_query', action='store_true', default=False,
                      help='''Make query for zone's forwarding hint''')
 
+parser.add_argument ('--verify', dest='verify', action='store_true', default=False,
+                     help='''Enable verification on each step of query process, otherwise only the final result will be verified''')
+
 parser.add_argument('zone', metavar='zone', type=str,
                     help='''Zone to query (will not be needed later)''')
 

@@ -16,10 +16,16 @@ import ndns
 import sys
 from StringIO import StringIO
 
-def dig (args, out = None):
+def dig (args, out = None, cachingQuery = None, policy = None):
     if out is None:
         out = StringIO ()
-    
+
+    if policy is None:
+        policy = ndns.TrustPolicy
+
+    if cachingQuery is None:
+        cachingQuery = ndns.CachingQueryObj
+
     zone = ndn.Name (args.zone)
 
     if args.simple:
@@ -53,20 +59,32 @@ def dig (args, out = None):
         needrun = False
         loop.stop ()
 
+    def onPreResult (result, msg):
+        def _onVerify (data, status):
+            if status:
+                onResult (result, msg)
+            else:
+                onError ("Got answer, but it cannot be verified")
+
+        if args.verify:
+            onResult (result, msg)
+        else:
+            policy.verifyAsync (face, result, _onVerify)
+
     if args.simple:
         if not args.raw:
-            ndns.CachingQueryObj.expressQueryFor (face,
-                                                  onResult, onError,
-                                                  zone, args.fh, name, args.rrtype)
+            cachingQuery.expressQueryFor (face,
+                                                  onPreResult, onError,
+                                                  zone, args.fh, name, args.rrtype, verify = args.verify)
         else:
-            ndns.CachingQueryObj.expressQueryForRaw (face,
-                                                     onResult, onError,
-                                                     zone, hint = args.fh)
+            cachingQuery.expressQueryForRaw (face,
+                                                     onPreResult, onError,
+                                                     zone, hint = args.fh, verify = args.verify)
     elif args.zone_fh_query:
-        ndns.CachingQueryObj.expressQueryForZoneFh (face, onResult, onError, zone)
+        cachingQuery.expressQueryForZoneFh (face, onPreResult, onError, zone, args.verify)
     else:
         args.rrtype = args.name
-        ndns.CachingQueryObj.expressQuery (face, onResult, onError, zone, args.rrtype)
+        cachingQuery.expressQuery (face, onPreResult, onError, zone, args.rrtype, args.verify)
 
     if needrun:
         loop.run ()
