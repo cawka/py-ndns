@@ -75,7 +75,7 @@ class IterativeQuery:
                 component = self.name[self.i]
                 self.i += 1
 
-                self.label_logical = ndn.Name ().append (ndnify (component))
+                self.label_logical = ndn.Name ().append (ndnify (str(component)))
                 self.label_real    = ndn.Name ().append (component)
 
             ndns.CachingQueryObj.expressQueryFor(self.face,

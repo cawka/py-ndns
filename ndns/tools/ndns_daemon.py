@@ -74,15 +74,15 @@ class NdnsDaemon (object):
     def _enableZone (self, zone):
         name = zone.name
 
-        self._face.setInterestFilter (name.append ("DNS"),
+        self._face.setInterestFilter (ndn.Name (name).append ("DNS"),
                                       functools.partial (self._onRequest, ndn.Name (), zone))
 
         activeScopes = []
         for scope in self._scopes + self._autoScope:
             if not scope.isPrefixOf (name):
                 activeScopes.append (str (scope))
-                self._face.setInterestFilter (scope.append ("\xF0.").append (name).append ("DNS"),
-                                              functools.partial (self._onRequest, scope.append ("\xF0."), zone))
+                self._face.setInterestFilter (ndn.Name (scope).append ("\xF0.").append (name).append ("DNS"),
+                                              functools.partial (self._onRequest, ndn.Name (scope).append ("\xF0."), zone))
         _LOG.info ('>> Start serving zone [%s] (%s)' % (name, activeScopes))
 
     def _disableZone (self, zone):
@@ -94,7 +94,7 @@ class NdnsDaemon (object):
         for scope in self._scopes + self._autoScope:
             if not scope.isPrefixOf (name):
                 activeScopes.append (str (scope))
-                self._face.clearInterestFilter (scope.append ("\xF0.").append (name).append ("DNS"))
+                self._face.clearInterestFilter (ndn.Name (scope).append ("\xF0.").append (name).append ("DNS"))
 
         _LOG.info ('<< Stop serving zone [%s] (%s)' % (name, activeScopes))
 
@@ -123,7 +123,7 @@ class NdnsDaemon (object):
             else:
                 # will sign with real key, but not sure if it is really necessary
                 encapPacket = ndns.createSignedData (self._ndns,
-                                                     scope.append (dataPacket.name),
+                                                     ndn.Name (scope).append (dataPacket.name),
                                                      dataPacket.toWire (),
                                                      dataPacket.signedInfo.freshnessSeconds,
                                                      zone.default_key)
