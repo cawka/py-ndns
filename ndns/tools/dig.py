@@ -42,6 +42,11 @@ def dig (args, out = None, cachingQuery = None, policy = None):
     needrun = True
 
     def onResult (result, msg):
+        if args.no_output:
+            needrun = False
+            loop.stop ()
+            return
+        
         if not args.quiet:
             out.write (";; Got data packet [%s]\n" % result.name)
             out.write (";;       signed by [%s]\n" % result.signedInfo.keyLocator.keyName)
@@ -55,6 +60,11 @@ def dig (args, out = None, cachingQuery = None, policy = None):
         loop.stop ()
 
     def onError (errmsg, *k, **kw):
+        if args.no_output:
+            needrun = False
+            loop.stop ()
+            return
+        
         out.write (";; %s\n" % errmsg)
         needrun = False
         loop.stop ()

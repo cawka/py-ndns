@@ -9,7 +9,6 @@
 # Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
 # 
 
-import ndns
 import logging
 import ndn
 import time
@@ -66,7 +65,7 @@ class CachingQuery:
 
         IterativeQuery.expressQuery (face, 
                                      ResultCacher (self.cache, key, onResult), onError, 
-                                     name, rrtype, parse_dns, verify)
+                                     name, rrtype, parse_dns, verify, cache = self)
 
     def expressQueryForZoneFh (self, face, onResult, onError, zone, verify):
         key = str(zone)
@@ -81,7 +80,7 @@ class CachingQuery:
             pass
 
         IterativeQuery.expressQueryForZoneFh (face, 
-                                              ResultCacher (self.cache_zone, key, onResult), onError, zone, verify)
+                                              ResultCacher (self.cache_zone, key, onResult), onError, zone, verify, cache = self)
         
     def expressQueryForRaw (self,
                             face,

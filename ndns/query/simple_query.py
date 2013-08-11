@@ -29,7 +29,8 @@ class SimpleQuery:
     def __init__ (self, face,
                   onResult, onError,
                   query,
-                  zone = None, hint = None, label = None, rrtype = None, parse_dns = True, limit_left = 10, verify = True):
+                  zone = None, hint = None, label = None, rrtype = None, 
+                  parse_dns = True, limit_left = 10, verify = True):
         self.face = face
         self.query = query
         self.onResult = onResult

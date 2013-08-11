@@ -17,7 +17,6 @@ import dns.rdata
 import dns.rrset
 import dns.message
 import dns.rdtypes.IN.NDNCERT
-import ndns
 import re
 import random
 import logging
@@ -30,7 +29,7 @@ _LOG = logging.getLogger ("ndns.query.Iterative")
 class IterativeQuery:
     def __init__ (self, face,
                   onResult, onError,
-                  name, rrtype = dns.rdatatype.FH, parse_dns = True, verify = True):
+                  name, rrtype = dns.rdatatype.FH, parse_dns = True, verify = True, cache = None):
         self.face = face
         self.onResult = onResult
         self.onError = onError
@@ -45,10 +44,14 @@ class IterativeQuery:
         self.label_real = ndn.Name ()
         self.label_logical = ndn.Name ()
 
+        self.cachingQuery = cache
+        if self.cachingQuery is None:
+            raise ("CachingQuery object is required")
+
     @staticmethod
     def expressQuery (face,
                       onResult, onError,
-                      name, rrtype = dns.rdatatype.FH, parse_dns = True, verify = True):
+                      name, rrtype = dns.rdatatype.FH, parse_dns = True, verify = True, cache = None):
 
         if rrtype is None:
             rrtype = dns.rdatatype.FH
@@ -58,15 +61,15 @@ class IterativeQuery:
 
         _LOG.debug ("expressQuery: name: %s, type: %s" % (name, dns.rdatatype.to_text (rrtype)))
 
-        query = IterativeQuery (face, onResult, onError, name, rrtype, parse_dns, verify)
+        query = IterativeQuery (face, onResult, onError, name, rrtype, parse_dns, verify, cache = cache)
         query._getMostSpecificNsAnswer (tryEmptyLabel = False)
 
     @staticmethod
-    def expressQueryForZoneFh (face, onFhResult, onError, name, verify):
+    def expressQueryForZoneFh (face, onFhResult, onError, name, verify, cache = None):
 
         _LOG.debug ("expressQueryForZoneFh: zone: %s" % name)
 
-        query = IterativeQuery (face, onFhResult, onError, name, rrtype = None, parse_dns = False, verify = verify)
+        query = IterativeQuery (face, onFhResult, onError, name, rrtype = None, parse_dns = False, verify = verify, cache = cache)
         query._getMostSpecificNsAnswer (tryEmptyLabel = False)
 
     def _getMostSpecificNsAnswer (self, tryEmptyLabel = False):
@@ -79,10 +82,10 @@ class IterativeQuery:
                 self.label_logical = ndn.Name ().append (ndnify (str(component)))
                 self.label_real    = ndn.Name ().append (component)
 
-            ndns.CachingQueryObj.expressQueryFor(self.face,
-                                                 self._onMostSpecificNsAnswer, self.onError,
-                                                 self.zone, self.hint, self.label_logical, dns.rdatatype.NS,
-                                                 parse_dns = True, verify = self.verify)
+            self.cachingQuery.expressQueryFor(self.face,
+                                              self._onMostSpecificNsAnswer, self.onError,
+                                              self.zone, self.hint, self.label_logical, dns.rdatatype.NS,
+                                              parse_dns = True, verify = self.verify)
         else:
             self._onNoMoreNsDelegation ()
 
@@ -108,10 +111,10 @@ class IterativeQuery:
 
         if dns_ns_target.is_subdomain (dns_zone):
             ns_label = ndn.Name (ndnify (dns_ns_target.relativize (dns_zone).to_text ()))
-            ndns.CachingQueryObj.expressQueryFor (self.face,
-                                                  self._onFhResult, self.onError,
-                                                  self.zone, self.hint, ns_label, dns.rdatatype.FH,
-                                                  parse_dns = True, verify = self.verify)
+            self.cachingQuery.expressQueryFor (self.face,
+                                               self._onFhResult, self.onError,
+                                               self.zone, self.hint, ns_label, dns.rdatatype.FH,
+                                               parse_dns = True, verify = self.verify)
         else:
             # ns_target = ndn.Name (ndnify (dns_ns_target.relativize (dns.name.root).to_text ()))
             # IterativeQuery.expressQuery (self.face, self._onFhResult, self.onError,
@@ -154,7 +157,7 @@ class IterativeQuery:
 
         _LOG.debug ('_onNoMoreNsDelegation [in %s for %s %s]' % (self.zone, self.label_logical, dns.rdatatype.to_text (self.rrtype)))
 
-        ndns.CachingQueryObj.expressQueryFor (self.face,
-                                              self.onResult, self.onError,
-                                              self.zone, self.hint, self.label_logical, self.rrtype, self.parse_dns, verify = self.verify)
+        self.cachingQuery.expressQueryFor (self.face,
+                                           self.onResult, self.onError,
+                                           self.zone, self.hint, self.label_logical, self.rrtype, self.parse_dns, verify = self.verify)
 

@@ -9,7 +9,7 @@
 #
 
 import ndn
-import logging, logging.handlers, sys, time
+import logging, sys, time
 import ndns
 import dns.rdatatype
 import random
