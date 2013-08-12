@@ -155,7 +155,7 @@ class NdnsDaemon (object):
 
         rrset = self._ndns.query (ndns.RRSet).with_parent (zone).filter_by (label = label.to_text (), rtype = rrtype).first ()
 
-        if not rrset:
+        if rrset is None:
             # check if there is more a specific record:
             more_specific_rrset = self._ndns.query (ndns.RRSet).\
                 with_parent (zone).\
@@ -194,10 +194,12 @@ class NdnsDaemon (object):
                                                     # 1,
                                                     zone.default_key)
 
+                del rrset
                 _LOG.debug ("<< Requested record nor more specific record exists. Returning NEXISTS as part of [%s]" % dataPacket.name)
                 return dataPacket
 
         dataPacket = rrset.ndndata
+        del rrset
         if not interestName.isPrefixOf (dataPacket.name):
             _LOG.debug ("Request is not in a canonical form (e.g., case mistmatch), requested data found, but cannot be returned")
             _LOG.debug ("        Could be version mistmatch")

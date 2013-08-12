@@ -11,4 +11,4 @@
 
 from simple_query import SimpleQuery
 from iterative_query import IterativeQuery
-from caching_query import CachingQuery
+from caching_query import CachingQuery, NonCachingQuery

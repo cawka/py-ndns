@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- Mode:python; c-file-style:"gnu"; indent-tabs-mode:nil -*- */
-# 
+#
 # Copyright (c) 2013, Regents of the University of California
 #                     Alexander Afanasyev
-# 
+#
 # BSD license, See the doc/LICENSE file for more information
-# 
+#
 # Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
-# 
+#
 
 import logging
 import ndn
@@ -24,7 +24,7 @@ class CachingQuery:
         self.cache_zone = {}
         self.cache_raw = {}
 
-    def expressQuery (self, 
+    def expressQuery (self,
                       face,
                       onResult, onError,
                       name, rrtype = dns.rdatatype.FH, parse_dns = True, verify = True):
@@ -41,13 +41,13 @@ class CachingQuery:
             def __init__ (self, name, type):
                 self.name = name
                 self.type = type
-    
+
             def __eq__ (self, other):
                 return self.name == other.name and self.type == other.type
-    
+
             def __ne__ (self, other):
                 return self.name != other.name or self.type != other.type
-    
+
             def __hash__ (self):
                 return str(self.name).__hash__ () + self.type
 
@@ -59,12 +59,12 @@ class CachingQuery:
             else:
                 onResult (result, msg)
                 return
-                
+
         except KeyError:
             pass
 
-        IterativeQuery.expressQuery (face, 
-                                     ResultCacher (self.cache, key, onResult), onError, 
+        IterativeQuery.expressQuery (face,
+                                     ResultCacher (self.cache, key, onResult), onError,
                                      name, rrtype, parse_dns, verify, cache = self)
 
     def expressQueryForZoneFh (self, face, onResult, onError, zone, verify):
@@ -79,39 +79,39 @@ class CachingQuery:
         except KeyError:
             pass
 
-        IterativeQuery.expressQueryForZoneFh (face, 
+        IterativeQuery.expressQueryForZoneFh (face,
                                               ResultCacher (self.cache_zone, key, onResult), onError, zone, verify, cache = self)
-        
+
     def expressQueryForRaw (self,
                             face,
                             onResult, onError,
-                            query, 
+                            query,
                             zone = None, hint = None, label = None, rrtype = None, parse_dns = True, limit_left = 10, verify = True):
         """
-        Caching version of the most basic type of querying (:py:meth:`ndns.query.SimpleQuery.expressQueryForRaw`).  
+        Caching version of the most basic type of querying (:py:meth:`ndns.query.SimpleQuery.expressQueryForRaw`).
         The user has to explicity specify the authority zone, forwarding hint, label, and resource record type.
 
         If ``zone``, ``label``, or ``rrtype`` are omitted or None, then they will be guessed from the query
-        
+
         :param face: Face object
         :type face: ndn.Face
         :param onResult: Callback called when query returns a valid result:
-        
+
             .. method:: onResult (data, dnsMessage)
-            
+
                 :param data: Data packet
                 :type data: ndn.Data
                 :param dnsMessage: if ``parse_dns`` flag is True, then fully parsed DNS message.
                                    if flag is False, then None
                 :type dnsMessage: dns.Message
-    
+
         :param onError: Callback called when query fails
-    
+
             .. method:: onError (errorMessage)
-    
+
                 :param errorMessage: Error message with explanation of the error
                 :type errorMessage: str
-    
+
         :param query: NDN name of the query in form of ``<authority_zone>/DNS/<label(s)>/<RR-TYPE>``
         :type query: ndn.Name
         :param zone:
@@ -127,7 +127,7 @@ class CachingQuery:
         key = str (query)
         try:
             [result, msg, ttl] = self.cache_raw [key]
-        
+
             if time.time () > ttl:
                 del self.cache_raw[key]
             else:
@@ -136,9 +136,9 @@ class CachingQuery:
         except KeyError:
             pass
 
-        SimpleQuery.expressQueryForRaw (face, 
-                                        ResultCacher (self.cache_raw, key, onResult), onError, 
-                                        query, 
+        SimpleQuery.expressQueryForRaw (face,
+                                        ResultCacher (self.cache_raw, key, onResult), onError,
+                                        query,
                                         zone, hint, label, rrtype, parse_dns, limit_left, verify)
 
     def expressQueryFor (self,
@@ -151,14 +151,14 @@ class CachingQuery:
             rrtype = dns.rdatatype.to_text (dns.rdatatype.from_text (rrtype))
         else:
             rrtype = dns.rdatatype.to_text (rrtype)
-            
+
         query = ndn.Name (zone).append ("DNS")
         if len(label) > 0:
             query = query.append (label)
         query = query.append (rrtype)
 
-        self.expressQueryForRaw (face, 
-                                 onResult, onError, 
+        self.expressQueryForRaw (face,
+                                 onResult, onError,
                                  query,
                                  zone, hint, label, rrtype, parse_dns, limit_left, verify)
 
@@ -171,3 +171,58 @@ class ResultCacher:
     def __call__ (self, ndn_data, dns_data):
         self.cache[self.key] = [ndn_data, dns_data, int (time.time ()) + ndn_data.signedInfo.freshnessSeconds]
         self.onResult (ndn_data, dns_data)
+
+
+class NonCachingQuery:
+    def expressQuery (self,
+                      face,
+                      onResult, onError,
+                      name, rrtype = dns.rdatatype.FH, parse_dns = True, verify = True):
+
+        # _LOG.debug ('expressQuery')
+
+        if rrtype is None:
+            rrtype = dns.rdatatype.FH
+
+        if isinstance (rrtype, str):
+            rrtype = dns.rdatatype.from_text (rrtype)
+
+        IterativeQuery.expressQuery (face,
+                                     onResult, onError,
+                                     name, rrtype, parse_dns, verify, cache = self)
+
+    def expressQueryForZoneFh (self, face, onResult, onError, zone, verify):
+        IterativeQuery.expressQueryForZoneFh (face,
+                                              onResult, onError, zone, verify, cache = self)
+
+    def expressQueryForRaw (self,
+                            face,
+                            onResult, onError,
+                            query,
+                            zone = None, hint = None, label = None, rrtype = None, parse_dns = True, limit_left = 10, verify = True):
+
+        SimpleQuery.expressQueryForRaw (face,
+                                        onResult, onError,
+                                        query,
+                                        zone, hint, label, rrtype, parse_dns, limit_left, verify)
+
+    def expressQueryFor (self,
+                         face,
+                         onResult, onError,
+                         zone, hint, label, rrtype, parse_dns = True, limit_left = 10, verify = True):
+
+        # _LOG.debug ('expressQueryFor')
+        if isinstance(rrtype, str):
+            rrtype = dns.rdatatype.to_text (dns.rdatatype.from_text (rrtype))
+        else:
+            rrtype = dns.rdatatype.to_text (rrtype)
+
+        query = ndn.Name (zone).append ("DNS")
+        if len(label) > 0:
+            query = query.append (label)
+        query = query.append (rrtype)
+
+        self.expressQueryForRaw (face,
+                                 onResult, onError,
+                                 query,
+                                 zone, hint, label, rrtype, parse_dns, limit_left, verify)
