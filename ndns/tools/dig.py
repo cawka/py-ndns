@@ -26,7 +26,10 @@ def dig (args, out = None, cachingQuery = None, policy = None):
     if cachingQuery is None:
         cachingQuery = ndns.CachingQueryObj
 
-    zone = ndn.Name (args.zone)
+    if not isinstance (args.zone, ndn.Name):
+        zone = ndn.Name (args.zone)
+    else:
+        zone = args.zone
 
     if args.simple:
         if args.name:
@@ -46,7 +49,7 @@ def dig (args, out = None, cachingQuery = None, policy = None):
             needrun = False
             loop.stop ()
             return
-        
+
         if not args.quiet:
             out.write (";; Got data packet [%s]\n" % result.name)
             out.write (";;       signed by [%s]\n" % result.signedInfo.keyLocator.keyName)
@@ -64,7 +67,7 @@ def dig (args, out = None, cachingQuery = None, policy = None):
             needrun = False
             loop.stop ()
             return
-        
+
         out.write (";; %s\n" % errmsg)
         needrun = False
         loop.stop ()

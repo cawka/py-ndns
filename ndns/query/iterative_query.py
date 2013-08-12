@@ -44,6 +44,9 @@ class IterativeQuery:
         self.label_real = ndn.Name ()
         self.label_logical = ndn.Name ()
 
+        self.fh_result = None
+        self.fh_msg = None
+
         self.cachingQuery = cache
         if self.cachingQuery is None:
             raise ("CachingQuery object is required")

@@ -171,8 +171,8 @@ class NdnsDaemon (object):
                 dataPacket = ndns.createSignedData (self._ndns,
                                                     interestName.appendVersion (),
                                                     msg.to_wire (origin = zone.dns_name),
-                                                    # zone.soa[0].rrs[0].ttl,
-                                                    1,
+                                                    zone.soa[0].rrs[0].ttl,
+                                                    # 1,
                                                     zone.default_key)
 
                 _LOG.debug ("<< Requested record doesn't exist, but there is a more specific record. Returning NDNAUTH as [%s]" % dataPacket.name)
@@ -190,8 +190,8 @@ class NdnsDaemon (object):
                 dataPacket = ndns.createSignedData (self._ndns,
                                                     interestName.appendVersion (),
                                                     msg.to_wire (origin = zone.dns_name),
-                                                    # zone.soa[0].rrs[0].ttl,
-                                                    1,
+                                                    zone.soa[0].rrs[0].ttl,
+                                                    # 1,
                                                     zone.default_key)
 
                 _LOG.debug ("<< Requested record nor more specific record exists. Returning NEXISTS as part of [%s]" % dataPacket.name)
